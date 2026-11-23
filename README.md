@@ -11,24 +11,24 @@ This repository is a companion to [graph-conjectures](https://github.com/graph-t
 - proofs of some relations between conjectures,
 - a tentative library for graph proofs.
 
-Each of these has a dedicated directory in `theories/`. Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
+Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Each topic appears as a sub-directory of `theories/`. The library is in `theories/GraphLib/` and has one file per topic. Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
 
 We rely on the following Rocq libraries:
 
 - [MathComp](https://math-comp.github.io/)
 - [GraphTheory](https://github.com/rocq-community/graph-theory)
 
-### Statements
+### Conjectures
 
-Each conjecture statement is written in a single `conj-name.v` Rocq file where `conj-name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It contains all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library from those more specific to the conjecture.
+Each conjecture is associated with a directory `theories/topic/conj-name/` where `conj-name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). Its statement is written in a `main.v` Rocq file. It contains all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library from those more specific to the conjecture. All the Rocq  definitions and the statement are inside a `Spec` module for the ease of checking (see below).
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. For each conjecture, we have a `conj-name/` directory containing a `main.v` file that presents the statement and imports the proof, which is itself contained in one or more files (possibly organized in subdirectories). 
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved `main.v` imports the proof, which is itself contained in one or more files (possibly organized in subdirectories). 
 
 ### Checking a proof
 
-To check a proof, it suffices to read `main.v` and run Rocq on it. This file is minimal: it contains a module `Spec` with a copy of `conj-name.v` (including the necessary definitions beyond those of MathComp and GraphTheory) and a proposition named, e.g., `Target`, that states the conjecture. It then imports the files of the proof and states a theorem of the form `Theorem conj_holds : Spec.Target.` with a one-line proof by an imported lemma. The final `Print Assumptions conj_holds.` command should produce the message `Closed under the global context`.
+To check a proof, it suffices to read `main.v` after Rocq compilation. This file is minimal: it contains a module `Spec` including the necessary definitions beyond those of MathComp and GraphTheory and a proposition named, e.g., `Target`, that states the conjecture (as described above). It then imports the files of the proof and states a theorem of the form `Theorem conj_holds : Spec.Target.` with a one-line proof by an imported lemma. The final `Print Assumptions conj_holds.` command should produce the message `Closed under the global context` (no assumed axiom).
 
 ### Relation proofs
 
