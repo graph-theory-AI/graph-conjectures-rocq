@@ -20,23 +20,23 @@ We rely on the following Rocq libraries:
 
 ### Conjectures
 
-Each conjecture is associated with a directory `theories/topic/conj-name/` where `conj-name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). Its statement is written in a `main.v` Rocq file. It contains all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library from those more specific to the conjecture. All the Rocq  definitions and the statement are inside a `Spec` module for the ease of checking (see below).
+Each conjecture is associated with a directory `theories/topic/conj-name/` where `conj-name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). Its statement is written in a `main.v` Rocq file. It contains all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library (which are copied) from those more specific to the conjecture.
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved `main.v` imports the proof, which is itself contained in one or more files (possibly organized in subdirectories). 
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved, the proof is contained in one or more  additional files (possibly organized in subdirectories) in the directory associated to the conjecture. 
 
 ### Checking a proof
 
-To check a proof, it suffices to read `main.v` after Rocq compilation. This file is minimal: it contains a module `Spec` including the necessary definitions beyond those of MathComp and GraphTheory and a proposition named, e.g., `Target`, that states the conjecture (as described above). It then imports the files of the proof and states a theorem of the form `Theorem conj_holds : Spec.Target.` with a one-line proof by an imported lemma. The final `Print Assumptions conj_holds.` command should produce the message `Closed under the global context` (no assumed axiom).
+To check a proof, it suffices to read `proof.v` after Rocq compilation. This file is minimal: it contains a module `Spec` including a copy of `main.v` with a proposition named, e.g., `Target`, that states the conjecture. It then imports the files of the proof and states a theorem of the form `Theorem conj_holds : Spec.Target.` with a one-line proof by an imported lemma. The final `Print Assumptions conj_holds.` command should produce the message `Closed under the global context` (no assumed axiom).
 
 ### Relation proofs
 
-Each proof $A \Rightarrow B$ (or $A \Leftrightarrow B$) is contained in a directory `A--B/`, where `A` and `B` are the canonical names of conjectures $A$ and $B$, respectively. The directory has the same structure as for conjecture proofs, and the proof can be checked similarly.
+Each proof $A \Rightarrow B$ is contained in a file `implies_B.v`, where `A/` is the directory associated to Conjecture $A$ and `B` is the canonical names of Conjecture $B$. It has the same structure as for conjecture proofs, and the proof can be checked similarly.
 
 ### Graph library
 
-A definition, lemma or theorem is added to the library if it is considered standard in the literature or if it is used in at least two proofs concerning distinct conjectures or relations.
+A definition, lemma or theorem is added to the library if it is considered standard in the literature or if it is used in at least two proofs concerning distinct conjectures or relations. Additionally, no equivalent exists in MathComp or GraphTheory. 
 
 
 
