@@ -70,9 +70,8 @@ Definition two_layer (D : diGraph) : diGraph :=
 
 (** ** Statement *)
 
-(** This is the positive form (the reduction that gives NP-completeness, as believed by the
-    authors), not a negation. *)
-Definition statement : Prop :=
+(** The reduction that gives NP-completeness, as believed by the authors. *)
+Definition AX_fractional_dichromatic_number_complexity : Prop :=
   forall (R : realFieldType) (D : diGraph),
     [/\ frac_dicolorable (two_layer D) (2%R : R) <-> dicolorable D 2,
         #|two_layer D| = 2 * #|D|

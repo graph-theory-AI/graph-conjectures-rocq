@@ -20,19 +20,19 @@ We rely on the following Rocq libraries:
 
 ### Conjectures
 
-Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in the Rocq file `main.v`. An opening comment presents the non-standard definitions and the conjecture statement in English. Then come all necessary definitions that are not in MathComp or GraphTheory, with a comment separating those of the local graph library (which are copied to make the file self-contained) from those more specific to the conjecture. Finally, a proposition named `statement` states the conjecture, or its negation if the conjecture is believed to be false. A comment before it indicates which one it is.
+Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in the Rocq file `main.v`. An opening comment presents the non-standard definitions and the conjecture statement in English. Then come all necessary definitions that are not in MathComp or GraphTheory, with a comment separating those of the local graph library (which are copied to make the file self-contained) from those more specific to the conjecture. Finally, a proposition named `conj_name` states the conjecture.
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If `statement` is proved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem statement_holds : main.statement.` with a one-line proof by a lemma from another file. `proof.v` requires `main` and that file without importing them.
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved or disproved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem conj_name_holds : conj_name.` or `Theorem conj_name_fails : ~ conj_name.` with a one-line proof by a lemma from another file. `proof.v` imports only the proposition from `main` (`Require Import main(conj_name)`), and requires the other file without importing it.
 
 ### Checking a proof
 
-A sanity check is included in the form of `Check (statement_holds : full.path.to.main.statement).` and `Print Assumptions statement_holds.`. After Rocq compilation (`make C=theories/topic/conj_name`), it suffices to read `main.v`, `proof.v` and the Rocq messages of the latter, and to verify that the full path is the correct one. For a more robust check, `make check C=theories/topic/conj_name` generates appropriate files for [rocq-comparator](https://github.com/LLM4Rocq/rocq-comparator) and runs it.
+A sanity check is included in the form of `Check (conj_name_holds : full.path.to.main.conj_name).` and `Print Assumptions conj_name_holds.` (or similarly with `conj_name_fails` and `~ full.path.to.main.conj_name`). After Rocq compilation (`make C=theories/topic/conj_name`), it suffices to read `main.v`, `proof.v` and the Rocq messages of the latter, and to verify that the full path is the correct one. For a more robust check, `make check C=theories/topic/conj_name` generates appropriate files for [rocq-comparator](https://github.com/LLM4Rocq/rocq-comparator) and runs it.
 
 ### Relation proofs
 
-Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory of conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v` with similar checking possibilities. If $A$ is disproved, we omit such proofs.
+Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory of conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v`, with a theorem `Theorem A_implies_B : A -> B.` and similar checking possibilities. If $A$ is disproved, we omit such proofs.
 
 ### Graph library
 
@@ -44,7 +44,7 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [statements.md](progress/statements.md) (1 statements formalized)
+- [conjectures.md](progress/conjectures.md) (1 statements formalized)
 - [conjecture-proofs.md](progress/conjecture-proofs.md) (1 conjectures proved or disproved)
 - [relation-proofs.md](progress/relation-proofs.md) (0 relations proved)
 - [graph-library.md](progress/graph-library.md) (3 definitions and 3 statements)

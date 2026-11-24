@@ -1,8 +1,10 @@
-From GC.digraph.AX_fractional_dichromatic_number_complexity Require main reduction.
+From GC.digraph.AX_fractional_dichromatic_number_complexity Require Import main(AX_fractional_dichromatic_number_complexity).
+From GC.digraph.AX_fractional_dichromatic_number_complexity Require reduction.
 
-Theorem statement_holds : main.statement.
+Theorem AX_fractional_dichromatic_number_complexity_holds :
+  AX_fractional_dichromatic_number_complexity.
 Proof. exact reduction.reduction. Qed.
 
-Check (statement_holds :
-  GC.digraph.AX_fractional_dichromatic_number_complexity.main.statement).
-Print Assumptions statement_holds.
+Check (AX_fractional_dichromatic_number_complexity_holds :
+  GC.digraph.AX_fractional_dichromatic_number_complexity.main.AX_fractional_dichromatic_number_complexity).
+Print Assumptions AX_fractional_dichromatic_number_complexity_holds.

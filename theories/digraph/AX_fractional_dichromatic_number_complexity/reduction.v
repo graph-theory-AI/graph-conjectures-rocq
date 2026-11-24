@@ -171,7 +171,7 @@ Qed.
 
 (** ** Main result *)
 
-Theorem reduction : main.statement.
+Theorem reduction : main.AX_fractional_dichromatic_number_complexity.
 Proof.
 move=> R D; split; last exact: num_edges_two_layer; last exact: card_two_layer.
 by split; [apply: dicolorable_of_frac|apply: frac_of_dicolorable].

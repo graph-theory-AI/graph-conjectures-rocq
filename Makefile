@@ -6,13 +6,15 @@
 # deletes the compiled files of a conjecture (all generated files without C)
 
 # make check C=theories/topic/conj_name
-# checks with rocq-comparator that proof.v proves the statement of main.v without axioms
+# checks with rocq-comparator that proof.v proves the proposition conj_name of main.v
+# (theorem conj_name_holds) or its negation (theorem conj_name_fails), without axioms
 # (the generated files and the verdict are in _build/check/topic/conj_name)
 
 COMPARATOR ?= rocq-comparator
 
 DIR := $(patsubst %/,%,$(C))
 REL := $(patsubst theories/%,%,$(DIR))
+NAME := $(notdir $(DIR))
 MOD := GC.$(subst /,.,$(REL))
 OUT := _build/check/$(REL)
 
@@ -29,14 +31,17 @@ check:
 	  { echo "usage: make check C=theories/topic/conj_name"; exit 2; }
 	@mkdir -p $(OUT)
 	@rm -f $(OUT)/verdict.json
-	@printf 'Require %s.main.\nTheorem statement_holds : %s.main.statement.\nAdmitted.\n' \
-	  $(MOD) $(MOD) > $(OUT)/Challenge.v
-	@printf 'Require %s.main.\nRequire %s.proof.\nTheorem statement_holds : %s.main.statement.\nProof. exact %s.proof.statement_holds. Qed.\n' \
-	  $(MOD) $(MOD) $(MOD) $(MOD) > $(OUT)/Solution.v
-	@printf '{ "theorem_names": ["statement_holds"], "permit_challenge_axioms": false, "axiom_policy": "listed" }\n' \
-	  > $(OUT)/config.json
+	@if grep -q '^Theorem $(NAME)_fails\>' $(DIR)/proof.v; \
+	then thm=$(NAME)_fails; stm='~ $(MOD).main.$(NAME)'; \
+	else thm=$(NAME)_holds; stm='$(MOD).main.$(NAME)'; fi; \
+	printf 'Require %s.main.\nTheorem %s : %s.\nAdmitted.\n' \
+	  "$(MOD)" "$$thm" "$$stm" > $(OUT)/Challenge.v; \
+	printf 'Require %s.main.\nRequire %s.proof.\nTheorem %s : %s.\nProof. exact %s.proof.%s. Qed.\n' \
+	  "$(MOD)" "$(MOD)" "$$thm" "$$stm" "$(MOD)" "$$thm" > $(OUT)/Solution.v; \
+	printf '{ "theorem_names": ["%s"], "permit_challenge_axioms": false, "axiom_policy": "listed" }\n' \
+	  "$$thm" > $(OUT)/config.json; \
+	echo "checking $$thm : $$stm"
 	@printf -- '-Q %s/theories GC\n-Q . Check\n' "$(CURDIR)" > $(OUT)/_CoqProject
-	@echo "checking $(MOD).main.statement"
 	@cd $(OUT) && { $(COMPARATOR) check --pretty config.json > verdict.json; status=$$?; \
 	  grep -E '^  "(ok|reason|detail)":' verdict.json; exit $$status; }
 
