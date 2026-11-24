@@ -20,11 +20,11 @@ We rely on the following Rocq libraries:
 
 ### Conjectures
 
-Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in a `main.v` Rocq file. More precisely, the file begins with all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library (which are copied for completeness) from those more specific to the conjecture. Finally, a statement with name `statement` states the conjecture if it is believed to be true, or its negation otherwise. A comment before the statement indicates whether it is the conjecture or its negation.
+Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in the Rocq file `main.v`. An opening comment presents the non-standard definitions and the conjecture statement in English. Then come all necessary definitions that are not in MathComp or GraphTheory, with a comment separating those of the local graph library (which are copied to make the file self-contained) from those more specific to the conjecture. Finally, a proposition named `statement` states the conjecture, or its negation if the conjecture is believed to be false. A comment before it indicates which one it is.
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem statement_holds : main.statement.` with a one-line proof by a lemma from another file. `proof.v` requires `main` and that file without importing them.
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If `statement` is proved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem statement_holds : main.statement.` with a one-line proof by a lemma from another file. `proof.v` requires `main` and that file without importing them.
 
 ### Checking a proof
 
