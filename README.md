@@ -11,7 +11,7 @@ This repository is a companion to [graph-conjectures](https://github.com/graph-t
 - proofs of some relations between conjectures,
 - a tentative library for graph proofs.
 
-Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Each topic appears as a sub-directory of `theories/`. The library is in `theories/GraphLib/` and has one file per topic. Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
+Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Each topic has a subdirectory in `theories/`. The library is in `theories/GraphLib/`, with one file per topic. Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
 
 We rely on the following Rocq libraries:
 
@@ -20,24 +20,23 @@ We rely on the following Rocq libraries:
 
 ### Conjectures
 
-Each conjecture is associated with a directory `theories/topic/conj_name/` where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). Its statement is written in a `main.v` Rocq file. It is preceeded by all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library (which are copied) from those more specific to the conjecture. Finally, the statement is defined with `statement`. If the conjecture is believed to be false, the statement states its negation. A comment before the statement indicates whether it is the conjecture or its negation.
+Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in a `main.v` Rocq file. More precisely, the file begins with all necessary definitions that are not in MathComp or GraphTheory. An opening comment presents the non-standard definitions and the conjecture statement in English. A comment separates the definitions of the local graph library (which are copied for completeness) from those more specific to the conjecture. Finally, a statement with name `statement` states the conjecture if it is believed to be true, or its negation otherwise. A comment before the statement indicates whether it is the conjecture or its negation.
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved, the proof is contained in one or more  additional files (possibly organized in subdirectories) in the directory associated to the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem statement_holds : main.statement.` with a one-line proof by a lemma from another file. 
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem statement_holds : main.statement.` with a one-line proof by a lemma from another file. `proof.v` requires `main` and that file without importing them.
 
 ### Checking a proof
 
-A sanity check is included in the form of `Check (statement_holds : full.path.to.main.statement).` and `Print Assumptions statement_holds.`. After Rocq compilation it suffices to read `main.v` and check Rocq messages in `proof.v`. One should also check that the statement is specified with the correct full path.
-Additionally, appropriate files can be generated for `rocq-comparator` utility through `make check C=theories/topic/conj_name` for a more robust check.
+A sanity check is included in the form of `Check (statement_holds : full.path.to.main.statement).` and `Print Assumptions statement_holds.`. After Rocq compilation, it suffices to read `main.v`, `proof.v` and the Rocq messages of the latter, and to verify that the full path is the correct one. For a more robust check, `make check C=theories/topic/conj_name` generates appropriate files for [rocq-comparator](https://github.com/LLM4Rocq/rocq-comparator) and runs it.
 
 ### Relation proofs
 
-Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory associated to Conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v` with similar checking possibilities. If $A$ is disproved, we omit such proofs.
+Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory of conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v` with similar checking possibilities. If $A$ is disproved, we omit such proofs.
 
 ### Graph library
 
-A definition, lemma or theorem is added to the library if it is considered standard in the literature or if it is used in at least two proofs concerning distinct conjectures or relations. Additionally, no equivalent exists in MathComp or GraphTheory. 
+A definition, lemma or theorem is added to the library if it is considered standard in the literature or if it is used in at least two proofs concerning distinct conjectures or relations. It must have no equivalent in MathComp or GraphTheory. 
 
 
 
