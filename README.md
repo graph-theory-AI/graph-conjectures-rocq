@@ -28,7 +28,7 @@ Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-
 
 ### Checking a proof
 
-A sanity check is included in the form of `Check (statement_holds : full.path.to.main.statement).` and `Print Assumptions statement_holds.`. After Rocq compilation, it suffices to read `main.v`, `proof.v` and the Rocq messages of the latter, and to verify that the full path is the correct one. For a more robust check, `make check C=theories/topic/conj_name` generates appropriate files for [rocq-comparator](https://github.com/LLM4Rocq/rocq-comparator) and runs it.
+A sanity check is included in the form of `Check (statement_holds : full.path.to.main.statement).` and `Print Assumptions statement_holds.`. After Rocq compilation (`make C=theories/topic/conj_name`), it suffices to read `main.v`, `proof.v` and the Rocq messages of the latter, and to verify that the full path is the correct one. For a more robust check, `make check C=theories/topic/conj_name` generates appropriate files for [rocq-comparator](https://github.com/LLM4Rocq/rocq-comparator) and runs it.
 
 ### Relation proofs
 
@@ -44,10 +44,10 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [statements.md](progress/statements.md) (TODO-nb statements formalized)
-- [conjecture-proofs.md](progress/conjecture-proofs.md) (TODO-nb conjectures proved or disproved)
-- [relation-proofs.md](progress/relation-proofs.md) (TODO-nb relations proved)
-- [graph-library.md](progress/graph-library.md) (TODO-nb definitions and TODO-nb statements)
+- [statements.md](progress/statements.md) (1 statements formalized)
+- [conjecture-proofs.md](progress/conjecture-proofs.md) (1 conjectures proved or disproved)
+- [relation-proofs.md](progress/relation-proofs.md) (0 relations proved)
+- [graph-library.md](progress/graph-library.md) (3 definitions and 3 statements)
 
 
 ## Installation
@@ -66,6 +66,9 @@ opam pin add rocq-comparator "git+https://github.com/LLM4Rocq/rocq-comparator.gi
 
 # optional, for VSCode (with the VsRocq extension)
 opam install vsrocq-language-server
+
+# optional, for rocq-mcp-evolve (claude MCP server for Rocq)
+opam pin add --switch=rocq9.2 rocq-mcp-evolve git+https://github.com/LLM4Rocq/rocq-mcp-evolve.git
 ```
 
 Contributors to this repository should have a local copy of [graph-conjectures](https://github.com/graph-theory-AI/graph-conjectures) in `../graph-conjectures` and a local copy of [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs) in `../Graph-Theory-LLM-Proofs` to ease the work. (Run your favorite agent from `..`.) Begin by asking the agent to follow the guidelines in this file.
@@ -74,7 +77,7 @@ Contributors to this repository should have a local copy of [graph-conjectures](
 ## Directives for AI agents
 
 - AI agents can read this file. They can polish the English, correct inconsistencies or add missing points if the user approves the change.
-- Writing new files or creating new directories other than those described above requires user approval.
+- Writing new files or creating new directories outside the hierarchy described above requires user approval. In particular, creating a directory and associated files or sub-directories for a conjecture, its topic directory, updating the topic file of the library or `Makefile` or `_CoqProject` or the progress files can be done in auto mode.
 - All approvals mentioned here are mandatory, even in auto mode.
 - Before working on any proof, read the summaries in `references/` and the statements in `theories/GraphLib`. Proofs mostly use SSReflect (the small-scale reflection technique).
 

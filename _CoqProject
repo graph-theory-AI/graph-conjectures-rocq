@@ -1,0 +1,2 @@
+-Q theories GC
+-arg -w -arg -notation-overridden,-ambiguous-paths
