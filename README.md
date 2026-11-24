@@ -54,7 +54,18 @@ Progress is reported (mostly by AI agents) in:
 
 To check the proofs, you need Rocq 9.2 plus some libraries that can be installed through [opam](https://opam.ocaml.org/):
 ```
-TODO
+opam switch create rocq9.2 ocaml-base-compiler.5.5.1
+eval $(opam env --switch=rocq9.2)
+opam repo add rocq-released https://rocq-prover.org/opam/released
+opam pin add -n rocq-core 9.2.0
+opam pin add -n coq-graph-theory "git+https://github.com/rocq-community/graph-theory.git"
+opam install rocq-core rocq-mathcomp-ssreflect.2.6.0 rocq-mathcomp-algebra.2.6.0 rocq-mathcomp-fingroup.2.6.0 rocq-mathcomp-zify coq-graph-theory
+
+# optional, for make check
+opam pin add rocq-comparator "git+https://github.com/LLM4Rocq/rocq-comparator.git"
+
+# optional, for VSCode (with the VsRocq extension)
+opam install vsrocq-language-server
 ```
 
 Contributors to this repository should have a local copy of [graph-conjectures](https://github.com/graph-theory-AI/graph-conjectures) in `../graph-conjectures` and a local copy of [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs) in `../Graph-Theory-LLM-Proofs` to ease the work. (Run your favorite agent from `..`.) Begin by asking the agent to follow the guidelines in this file.
