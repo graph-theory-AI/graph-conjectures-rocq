@@ -1,701 +1,527 @@
-(** * The Z_p-simplotopal Tucker lemma
+(** * A Tucker lemma for Z_p
 
-    Meunier (2014), Theorem 3.3 [zp_tucker_prime].  The chain map of chainmap.v is instantiated
-    with the cubical complex K; then an induction on the dimension, with the hemisphere chains of
-    hemispheres.v, the chain map of eta.v and the cochains of bar.v, shows that the top simplotope
-    of L is in the image of a face of K. *)
+    A combinatorial form of Dold's theorem (there is no equivariant map from a connected enough
+    space to a space of smaller dimension with a free action of Z_p), on a cubical complex for the
+    splitting of necklaces [zp_tucker].  For p = 2, it is close to Tucker's lemma.
+
+    The complex K is the one of F. Meunier, "Simplotopal maps and necklace splitting", Discrete
+    Mathematics 323 (2014).  Let R be the star with p paths of length n from its centre, indexed by
+    Z_p.  A cell of K is a product of vertices and edges of R, one of them at least being the end
+    of a path.  Z_p acts by a shift of the paths.  If the cells of K with at most M+1 factors have
+    labels in Z_p x {0, ..., M-1} such that the first component of the label is equivariant, then
+    some cell has a facet with another first component, and a second component that is not smaller.
+
+    The proof uses cochains on sequences of elements of Z_p (the bar complex), with coefficients in
+    Z_p.  A labelling gives a map from these cochains to the cochains of K [pull], by a sum over
+    the flags of faces, and the paths of R give a map back [outer].  The composition commutes with
+    the coboundary and with the action.  The cochain 1 of dimension 0 is the norm of some cochain
+    w_0, the coboundary of w_0 is of the form w_1(s+1) - w_1(s) for some w_1, the coboundary of w_1
+    is the norm of some w_2, etc.  The values on some chains [hemi] are equal to 1 from dimension 0
+    to dimension M, but in dimension M, two consecutive first components on a flag are equal, hence
+    the value is 0. *)
 
 From mathcomp Require Import boot algebra.
-From GC.GraphLib.necklace Require Import chains necklace_complex cubical hemispheres.
-From GC.GraphLib.necklace Require Import simplotope chainmap bar eta.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
-Set SsrOldRewriteGoalsOrder.
 Local Open Scope ring_scope.
 
-Lemma chain_neq0 (R : nzRingType) (cell : finType) (x : {ffun cell -> R^o}) :
-  x != 0 -> exists c, x c != 0.
+(** ** Linear functionals *)
+
+Section Linear.
+Variables (R : nzRingType) (X : Type).
+Implicit Types (O : (X -> R) -> R) (u v : X -> R).
+
+(** Linear functionals on functions, without functional extensionality. *)
+Definition lin O := (forall u v, u =1 v -> O u = O v) /\
+  forall a u v, O (fun x => a * u x + v x) = a * O u + O v.
+
+Lemma linB O u v : lin O -> O (fun x => u x - v x) = O u - O v.
 Proof.
-move=> hx; apply/existsP; rewrite -[X in is_true X]negbK; apply/negP => /existsPn h.
-move/eqP: hx; apply; apply/ffunP => c; rewrite ffunE.
-by move: (h c); rewrite negbK => /eqP.
+case=> e l; rewrite addrC -mulN1r -l; apply: e => x.
+by rewrite mulN1r addrC.
 Qed.
 
-(** ** N-generic facts about the cubical complex *)
-
-Section CubFacts.
-Variables (n p N : nat).
-Hypothesis p_gt0 : (0 < p)%N.
-Variable R : comNzRingType.
-
-Local Abbreviation cM := (cellN n p N).
-
-Lemma vsel_fv_top (c : cM) j T : is_edge (c j) ->
-  vsel (fv c j (tc (c j))) T = vsel c (j |: T).
+Lemma lin0 O : lin O -> O (fun=> 0) = 0.
 Proof.
-case hj : (c j) => [v|kr] // _; apply/ffunP => i; rewrite /vsel !ffunE.
-case: (eqVneq i j) => [->|hij]; first by rewrite /= hj !inE eqxx.
-by rewrite !inE (negbTE hij) /=.
+move=> lO; rewrite -[RHS](subrr (O (fun=> 0))) -linB //.
+by case: lO => e _; apply: e => x; rewrite subrr.
 Qed.
 
-Lemma vsel_fv_bot (c : cM) j T : is_edge (c j) ->
-  vsel (fv c j (bc (c j))) T = vsel c (T :\ j).
+Lemma lin_sum O (I : finType) (U : I -> X -> R) :
+  lin O -> O (fun x => \sum_i U i x) = \sum_i O (U i).
 Proof.
-case hj : (c j) => [v|kr] // _; apply/ffunP => i; rewrite /vsel !ffunE.
-case: (eqVneq i j) => [->|hij]; first by rewrite /= hj !inE eqxx.
-by rewrite !inE (negbTE hij) /=.
+move=> lO; have [e l] := lO; elim: (index_enum I) => [|i r IH].
+  by rewrite big_nil -[RHS](lin0 lO); apply: e => x; rewrite big_nil.
+rewrite big_cons -IH -[O (U i)]mul1r -l; apply: e => x.
+by rewrite big_cons mul1r.
 Qed.
 
-Lemma dimN_fv (c : cM) j v : is_edge (c j) -> dimN (fv c j v) = (dimN c).-1.
+End Linear.
+
+(** ** Cochains on sequences of elements of Z_p *)
+
+Section Cochains.
+Variable p : nat.
+Local Abbreviation F := ('Z_p).
+Implicit Types (l s : seq F) (u v w : seq F -> F) (d : nat).
+
+(** The coboundary: the alternating sum of the values on the sequences minus one element. *)
+Fixpoint delta u s : F := if s is x :: s' then u s' - delta (fun l => u (x :: l)) s' else 0.
+
+Lemma eq_delta u v s : (forall l, (size l).+1 = size s -> u l = v l) -> delta u s = delta v s.
 Proof.
-move=> hj; rewrite /dimN.
-have -> : [set i | is_edge (fv c j v i)] = [set i | is_edge (c i)] :\ j.
-  by apply/setP => i; rewrite !inE is_edge_fv andbC.
-by rewrite [in RHS](cardsD1 j) inE hj.
+elim: s u v => //= x s IH u v uv; rewrite uv //; congr (_ - _).
+by apply: IH => l sl; rewrite uv //= sl.
 Qed.
 
-Lemma bd1_supp (c f : cM) : (bd1 c : {ffun cM -> R^o}) f != 0 ->
-  exists2 j, is_edge (c j) &
-    f = fv c j (tc (c j)) \/ f = fv c j (bc (c j)).
+Lemma lin_delta s : lin (delta^~ s).
 Proof.
-rewrite /bd1 => /supp_bigsum[j _ hj].
-have hej : is_edge (c j).
-  apply: contraR hj => hn.
-  by rewrite (@edgeterm_novtx n p N R c j hn) ffunE eqxx.
-exists j => //; move: hj; rewrite /edgeterm.
-case hc : (c j) hej => [v|kr] // _.
-rewrite scale_ffunE ffunE ffunE ffunE ccE /etop /ebot /tc /bc.
-case: (eqVneq f (fv c j (Some kr))) => [->|h1]; first by left.
-case: (eqVneq f (fv c j (slide (Some kr)))) => [->|h2]; first by right.
-by rewrite subr0 mulr0 eqxx.
+split=> [u v uv|]; first exact: eq_delta.
+elim: s => [|x s IH] a u v /=; first by rewrite mulr0 addr0.
+by rewrite IH mulrBr opprD addrACA.
 Qed.
 
-Lemma bd1_aug (c : cM) : \sum_(f : cM) (bd1 c : {ffun cM -> R^o}) f = 0.
+Lemma deltaK u s : delta (delta u) s = 0.
+Proof. by elim: s u => //= x s IH u; rewrite (linB _ _ (lin_delta s)) IH subr0 subrr. Qed.
+
+(** The action of Z_p. *)
+Definition sh (k : F) s := [seq x + k | x <- s].
+
+Lemma delta_sh u k s : delta u (sh k s) = delta (fun l => u (sh k l)) s.
+Proof. by elim: s u => //= x s IH u; rewrite IH. Qed.
+
+Lemma sh0 s : sh 0 s = s.
+Proof. by rewrite -[RHS]map_id; apply: eq_map => x; rewrite addr0. Qed.
+
+Lemma shD k1 k2 s : sh k1 (sh k2 s) = sh (k2 + k1) s.
+Proof. by rewrite /sh -map_comp; apply: eq_map => x /=; rewrite addrA. Qed.
+
+(** The difference in odd dimension, the norm in even dimension. *)
+Definition act d u s := if odd d then u (sh 1 s) - u s else \sum_k u (sh k s).
+
+Lemma eq_act d u v s : (forall l, size l = size s -> u l = v l) -> act d u s = act d v s.
 Proof.
-rewrite /bd1 (eq_bigr (fun f => \sum_(j : 'I_N) (edgeterm c j : {ffun cM -> R^o}) f));
-  last by move=> f _; rewrite sum_ffunE.
-rewrite exchange_big /=; apply: big1 => j _.
-rewrite /edgeterm; case hc : (c j) => [v|kr]; first by apply: big1 => f _; rewrite ffunE.
-rewrite (eq_bigr (fun f => (-1) ^+ (rk c j) *
-    ((cc (fv c j (etop kr)) : {ffun cM -> R^o}) f
-     - (cc (fv c j (ebot kr)) : {ffun cM -> R^o}) f))); last first.
-  by move=> f _; rewrite scale_ffunE ffunE ffunE ffunE.
-by rewrite -mulr_sumr sumrB !sum_cc_aug subrr mulr0.
+move=> uv; rewrite /act; case: ifP => _; first by rewrite !uv ?size_map.
+by apply: eq_bigr => k _; rewrite uv ?size_map.
 Qed.
 
-Lemma inK_fv (c : cM) j : inK c -> is_edge (c j) ->
-  inK (fv c j (tc (c j))) && inK (fv c j (bc (c j))).
+Lemma lin_act d s : lin (fun u => act d u s).
 Proof.
-move=> /forallP hc hj; apply/andP; split; apply/forallP => T.
-  by rewrite (vsel_fv_top T hj); exact: hc.
-by rewrite (vsel_fv_bot T hj); exact: hc.
+split=> [u v uv|a u v]; first exact: eq_act.
+rewrite /act; case: ifP => _; first by rewrite mulrBr opprD addrACA.
+by rewrite mulr_sumr -big_split.
 Qed.
 
-Lemma dimN_shift (c : cM) : dimN (shift p_gt0 c) = dimN c.
+Lemma act_delta d u s : act d (delta u) s = delta (act d u) s.
 Proof.
-rewrite /dimN; apply: eq_card => j; rewrite !inE /shift ffunE.
-by case: (c j).
+rewrite /act; case: (odd d); first by rewrite (linB _ _ (lin_delta s)) delta_sh.
+by rewrite (lin_sum _ (lin_delta s)); apply: eq_bigr => k _; rewrite delta_sh.
 Qed.
 
-Lemma bd1_dim (c f : cM) : (bd1 c : {ffun cM -> R^o}) f != 0 ->
-  dimN f = (dimN c).-1.
-Proof. by move=> /bd1_supp[j hj [->|->]]; exact: dimN_fv. Qed.
-
-End CubFacts.
-
-(** ** the hemisphere chain [h d] is a d-chain *)
-
-Section Homog.
-Variables (n p N : nat).
-Hypothesis p_gt0 : (0 < p)%N.
-Hypothesis N_gt0 : (0 < N)%N.
-Variable R : comNzRingType.
-
-Local Abbreviation cM := (cellN n p N).
-Local Abbreviation chM := {ffun cM -> R^o}.
-
-Definition homd (k : nat) (x : chM) : Prop := forall c, x c != 0 -> dimN c = k.
-
-Lemma homd_cc (c : cM) k : dimN c = k -> homd k (cc c).
-Proof. by move=> h f; rewrite ccE; case: (eqVneq f c) => [->|_] //; rewrite eqxx. Qed.
-
-Lemma homd0 k : homd k (0 : chM).
-Proof. by move=> c; rewrite ffunE eqxx. Qed.
-
-Lemma homd_D k (x y : chM) : homd k x -> homd k y -> homd k (x + y).
+Lemma actK d u s : act d (act d.+1 u) s = 0.
 Proof.
-move=> hx hy c; rewrite ffunE => hc.
-have [xc|xc] := eqVneq (x c) 0; last exact: hx.
-by apply: hy; move: hc; rewrite xc add0r.
+rewrite /act /=; case: (odd d) => /=.
+  apply/eqP; rewrite subr_eq0; apply/eqP; rewrite [RHS](reindex_inj (addrI 1)).
+  by apply: eq_bigr => k _; rewrite shD.
+rewrite sumrB; apply/eqP; rewrite subr_eq0; apply/eqP.
+by rewrite [RHS](reindex_inj (addIr 1)); apply: eq_bigr => k _; rewrite shD.
 Qed.
 
-Lemma homd_N k (x : chM) : homd k x -> homd k (- x).
-Proof. by move=> hx c; rewrite ffunE oppr_eq0 => hc; exact: hx. Qed.
+(** Cochains of dimension [d] that vanish on the sequences with two equal consecutive elements. *)
+Definition nml d u := forall a x b, (size a + size b).+1 = d -> u (a ++ [:: x, x & b]) = 0.
 
-Lemma homd_Z k a (x : chM) : homd k x -> homd k (a *: x).
+Lemma nml_cons d u x : nml d.+1 u -> nml d (fun l => u (x :: l)).
+Proof. by move=> nu a y b sab; apply: (nu (x :: a)); rewrite /= -sab. Qed.
+
+Lemma nml_delta d u : nml d u -> nml d.+1 (delta u).
 Proof.
-move=> hx c hc; apply: hx; apply: contraNN hc => /eqP e.
-by rewrite scale_ffunE e mulr0.
+move=> nu a; elim: a d u nu => [|y a IH] d u nu x b [sab] /=; last first.
+  rewrite nu // (IH (size a + size b)%N) ?subr0 //; move: nu; rewrite -sab; exact: nml_cons.
+rewrite opprB addrCA subrr addr0 -[RHS](lin0 (lin_delta b)).
+by apply: eq_delta => l sl; apply: (nu [::]); rewrite -sab.
 Qed.
 
-Lemma homd_sum k (I : finType) (P : pred I) (F : I -> chM) :
-  (forall i, P i -> homd k (F i)) -> homd k (\sum_(i | P i) F i).
-Proof. by move=> h c /supp_bigsum[i hi hc]; exact: (h i hi c hc). Qed.
+Lemma nml_sh d u k : nml d u -> nml d (fun s => u (sh k s)).
+Proof. by move=> nu a x b sab; rewrite /sh map_cat /= nu ?size_map. Qed.
 
-Lemma homd_lin k (f : cM -> chM) (x : chM) :
-  (forall c, x c != 0 -> homd k (f c)) -> homd k (lin f x).
+Lemma nml_act d u : nml d u -> nml d (act d u).
 Proof.
-move=> hf; rewrite /lin; apply: homd_sum => c _.
-have [xc|xc] := eqVneq (x c) 0; first by rewrite xc scale0r; exact: homd0.
-by apply: homd_Z; exact: hf.
+move=> nu a x b sab; rewrite /act; case: ifP => _.
+  by rewrite (nml_sh 1 nu) // nu ?subr0.
+by rewrite big1 // => k _; apply: (nml_sh k nu).
 Qed.
 
-Lemma homd_nu k (x : chM) : homd k x -> homd k (nu p_gt0 x).
+(** A primitive of [u] for [act d]. *)
+Definition prim d u s : F := let h := head 0 s in
+  if odd d then \sum_(i : F | (i < h)%N) u (sh (i - h) s) else if h == 0 then u s else 0.
+
+Lemma nml_prim d u : nml d u -> nml d (prim d u).
 Proof.
-move=> hx; rewrite /nu; apply: homd_lin => c hc.
-by apply: homd_cc; rewrite dimN_shift; exact: hx.
+move=> nu a x b sab; rewrite /prim; case: ifP => _; last by rewrite nu ?if_same.
+by rewrite big1 // => i _; apply: (nml_sh _ nu).
 Qed.
 
-Lemma homd_nupow r k (x : chM) : homd k x -> homd k (nupow p_gt0 r x).
+Lemma head_sh k s : s != [::] -> head 0 (sh k s) = head 0 s + k.
+Proof. by case: s. Qed.
+
+Lemma val_add1 (h : F) :
+  (h + 1 : F) = (if h.+1 == (Zp_trunc p).+2 then 0 else h.+1)%N :> nat.
 Proof.
-rewrite /nupow; elim: r x => [|r IH] x hx //=.
-by apply: homd_nu; exact: IH.
+rewrite /= modnDmr addn1; case: eqP => [->|/eqP hp]; first by rewrite modnn.
+by rewrite modn_small // ltn_neqAle hp ltn_ord.
 Qed.
 
-Lemma homd_sigma k (x : chM) : homd k x -> homd k (sigma p_gt0 x).
-Proof. by move=> hx; rewrite /sigma; apply: homd_sum => r _; exact: homd_nupow. Qed.
-
-Lemma homd_bd k (x : chM) : homd k.+1 x -> homd k (bd x).
+Lemma primK d u s : s != [::] -> (forall k, act d.+1 u (sh k s) = 0) -> act d (prim d u) s = u s.
 Proof.
-move=> hx; rewrite /bd; apply: homd_lin => c hc f hf.
-by rewrite (bd1_dim hf) (hx c hc).
+move=> s0; rewrite /act /prim /=; case: (odd d) => /= actu; last first.
+  have const k : u (sh k s) = u s.
+    have ks (i : nat) : u (sh i%:R s) = u s.
+      elim: i => [|i IH]; first by rewrite sh0.
+      by rewrite -IH; apply/eqP; rewrite -subr_eq0 -(actu i%:R) shD mulrSr.
+    by rewrite -[k]natr_Zp ks.
+  rewrite (bigD1 (- head 0 s)) //= head_sh // subrr eqxx big1 ?addr0 // => k kh.
+  by rewrite head_sh // addr_eq0 eq_sym eqr_oppLR (negPf kh).
+rewrite head_sh //; set h := head 0 s; pose U (i : F) := u (sh (i - h) s).
+have -> : \sum_(i : F | (i < (h + 1)%R)%N) u (sh (i - (h + 1)) (sh 1 s)) =
+    \sum_(i : F | (i < (h + 1)%R)%N) U i.
+  by apply: eq_bigr => i _; rewrite shD addrC -addrA opprD addrNK.
+have Uh : U h = u s by rewrite /U subrr sh0.
+rewrite val_add1; case: eqP => [hp|_]; last first.
+  rewrite (bigD1 h) //= Uh -addrA [X in _ + X](_ : _ = 0) ?addr0 //; apply/eqP.
+  rewrite subr_eq0; apply/eqP/eq_bigl => i.
+  by rewrite ltnS [RHS]ltn_neqAle andbC.
+rewrite big_pred0 // sub0r; apply/eqP; rewrite eqr_oppLR -subr_eq0 opprK -Uh.
+apply/eqP; rewrite -[RHS](actu (- h)) [RHS](bigD1 h) //= shD addNr sh0 -Uh [RHS]addrC.
+congr (_ + _); apply: eq_big => [i|i _]; last by rewrite shD addrC.
+have hi : (h < i)%N = false by apply/negbTE; rewrite -leqNgt -ltnS hp ltn_ord.
+by rewrite -(inj_eq val_inj) [RHS]neq_ltn hi orbF.
 Qed.
 
-Lemma dimN_setc (c : cM) j x : ~~ is_edge (c j) -> is_edge x ->
-  dimN (setc c j x) = (dimN c).+1.
-Proof.
-move=> hj hx; rewrite /dimN.
-have -> : [set i | is_edge (setc c j x i)] = j |: [set i | is_edge (c i)].
-  apply/setP => i; rewrite !inE /setc ffunE.
-  by case: (eqVneq i j) => [->|_]; rewrite ?hx ?eqxx.
-by rewrite cardsU1 inE hj.
-Qed.
+End Cochains.
 
-Lemma consP_supp j (X : chM) f : (consP p_gt0 j X) f != 0 ->
-  exists2 c, X c != 0 & exists k : 'I_n, f = setc c j (Edg (k, p1 p_gt0)).
-Proof.
-rewrite /consP /lin => /supp_bigsum[c _ hc].
-have hXc : X c != 0.
-  by apply: contraNN hc => /eqP e; rewrite e scale0r ffunE eqxx.
-exists c => //.
-have hs : (\sum_(k : 'I_n) cc (setc c j (Edg (k, p1 p_gt0))) : chM) f != 0.
-  by apply: contraNN hc => /eqP e; rewrite scale_ffunE e mulr0 eqxx.
-move: hs => /supp_bigsum[k _ hk]; exists k.
-move: hk; rewrite ccE.
-by case: (eqVneq f (setc c j (Edg (k, p1 p_gt0)))) => // _; rewrite eqxx.
-Qed.
+(** ** The cells of K *)
 
-Lemma homd_consP j k (X : chM) :
-  homd k X -> (forall c, X c != 0 -> ~~ is_edge (c j)) ->
-  homd k.+1 (consP p_gt0 j X).
-Proof.
-move=> hX hj f /consP_supp[c hc [kk ->]].
-by rewrite dimN_setc ?(hX c hc) //; exact: hj.
-Qed.
-
-Lemma homd_htil d : (d < N)%N -> homd d (htil n R p_gt0 N_gt0 d).
-Proof.
-elim: d => [|d IH] hd.
-  apply: homd_cc; rewrite /dimN; apply/eqP; rewrite cards_eq0; apply/eqP.
-  by apply/setP => j; rewrite !inE /o_cell ffunE.
-have hd' : (d < N)%N by apply: ltnW.
-have hcons : homd d.+1 (consP p_gt0 (pc N_gt0 d) (htil n R p_gt0 N_gt0 d)).
-  apply: homd_consP; first exact: IH.
-  move=> c hc.
-  have hb := @below_htil n p N R p_gt0 N_gt0 d hd'.
-  by rewrite (hb c hc (pc N_gt0 d) (leqnn _)).
-rewrite [htil _ _ _ _ _.+1]/=.
-by case: (odd d) hcons => hcons;
-   [apply: homd_D; [apply: homd_nu | apply: homd_N] | apply: homd_sigma].
-Qed.
-
-Lemma homd_h d : (d < N)%N -> homd d (h n R p_gt0 N_gt0 d).
-Proof.
-move=> hd; rewrite /h; apply: homd_D; last exact: homd_htil.
-apply: homd_bd; apply: homd_consP; first exact: homd_htil.
-move=> c hc.
-have hb := @below_htil n p N R p_gt0 N_gt0 d hd.
-by rewrite (hb c hc (pc N_gt0 d) (leqnn _)).
-Qed.
-
-End Homog.
-
-(** ** the cubical complex K as a source for [chainmap.v] *)
-
-Section Glue.
-Variables (n t p : nat).
-Hypothesis p_gt0 : (0 < p)%N.
-Variable R : comNzRingType.
-Variable lam : vertex n t p -> 'I_t -> 'I_p.
-
-Local Abbreviation NN := (N t p).
-Local Abbreviation cN := (cellN n p NN).
-
-Definition Sof (c : cN) : {set 'I_NN} := [set j | is_edge (c j)].
-Definition uof (c : cN) : vertex n t p := vsel c setT.
-Definition mspN (c : cN) : Lcell t p :=
-  [ffun i => [set lam (vsel c T) i | T in [set: {set 'I_NN}]]].
-
-Lemma card_Sof (c : cN) : #|Sof c| = dimN c.
-Proof. by []. Qed.
-
-Lemma mspN_ne (c : cN) i : mspN c i != set0.
-Proof.
-rewrite ffunE; apply/set0Pn; exists (lam (vsel c setT) i).
-by apply/imsetP; exists setT; rewrite ?inE.
-Qed.
-
-Lemma mspN_mono (c f : cN) : (bd1 c : {ffun cN -> R^o}) f != 0 ->
-  Lsub (mspN f) (mspN c).
-Proof.
-move=> /bd1_supp[j hj [->|->]]; apply/forallP => i; apply/subsetP => x;
-  rewrite !ffunE => /imsetP[T _ ->]; apply/imsetP.
-  by exists (j |: T); rewrite ?inE // (vsel_fv_top T hj).
-by exists (T :\ j); rewrite ?inE // (vsel_fv_bot T hj).
-Qed.
-
-(** *** the bridge to the [(u, S)] presentation of a face *)
-
-Lemma vsel_eq (c : cN) T T' : T :&: Sof c = T' :&: Sof c -> vsel c T = vsel c T'.
-Proof.
-move=> h; apply/ffunP => j; rewrite /vsel !ffunE.
-case hc : (c j) => [v|kr] //.
-have hj : j \in Sof c by rewrite inE hc.
-have hin : (j \in T) = (j \in T').
-  by move: hj h => /=; rewrite inE hc => _ /setP/(_ j); rewrite !inE hc /= !andbT.
-by rewrite hin.
-Qed.
-
-Lemma vert_vsel (c : cN) (T : {set 'I_NN}) : T \subset Sof c ->
-  vert (uof c) T = vsel c (Sof c :\: T).
-Proof.
-move=> hT; apply/ffunP => j; rewrite /vert /uof /vsel !ffunE.
-case hc : (c j) => [v|kr].
-  have hj : j \notin Sof c by rewrite inE hc.
-  have hjT : j \notin T by apply: contra hj; exact: (subsetP hT).
-  by rewrite (negbTE hjT).
-rewrite !inE hc /=.
-by case: (j \in T).
-Qed.
-
-Lemma in_XE (v : vertex n t p) : in_X v = inX v.
-Proof. by []. Qed.
-
-Lemma face_inK (c : cN) : inK c -> face (uof c) (Sof c).
-Proof.
-move=> hc; apply/andP; split; apply/forall_inP => x hx.
-  move: hx; rewrite inE /uof /vsel ffunE.
-  by case hcx : (c x) => [v|kr] //= _; rewrite inE.
-rewrite powersetE in hx.
-by rewrite (vert_vsel hx) in_XE; exact: (forallP hc).
-Qed.
-
-Lemma image_mspN (c : cN) i : image_set lam (uof c) (Sof c) i = mspN c i.
-Proof.
-apply/setP => x; rewrite ffunE; apply/imsetP/imsetP => [[T hT ->]|[T _ ->]].
-  rewrite powersetE in hT.
-  by exists (Sof c :\: T); rewrite ?inE // (vert_vsel hT).
-exists (Sof c :\: (T :&: Sof c)); first by rewrite powersetE subsetDl.
-rewrite (vert_vsel (subsetDl _ _)) (sub_setD (subsetIr T (Sof c))).
-congr (lam _ i); apply: (@vsel_eq c T (T :&: Sof c)).
-by rewrite -setIA setIid.
-Qed.
-
-(** *** the ℤ_p action on K *)
-
-Lemma vsel_shift (c : cN) (T : {set 'I_NN}) :
-  vsel (shift p_gt0 c) T = shift_vertex p_gt0 (vsel c T).
-Proof.
-apply/ffunP => j; rewrite /vsel /shift /shift_vertex !ffunE /shift_cut.
-case hc : (c j) => [v|[k r]] //=.
-case: (j \in T) => //=.
-by case: (k == 0 :> nat).
-Qed.
-
-Lemma inX_shift (v : vertex n t p) : inX (shift_vertex p_gt0 v) = inX v.
-Proof.
-have hcov : forall j b, covers ((shift_vertex p_gt0 v) j) b = covers (v j) b.
-  move=> j b; rewrite /shift_vertex ffunE /shift_cut.
-  by case: (v j) => [[k r]|].
-by apply/forallP/forallP => h b; have := h b => /existsP[j hj]; apply/existsP;
-   exists j; move: hj; rewrite ?hcov // -hcov.
-Qed.
-
-Lemma inK_shift (c : cN) : inK c -> inK (shift p_gt0 c).
-Proof.
-move=> /forallP hc; apply/forallP => T.
-by rewrite vsel_shift inX_shift; exact: hc.
-Qed.
-
-(** *** the induced chain map for K *)
-
-Section Induced.
-Hypothesis hsimp : simplotopal lam.
-
-Lemma mspN_dim (c : cN) : inK c -> (Ldim (mspN c) <= dimN c)%N.
-Proof.
-move=> hc; rewrite -card_Sof.
-have hh := hsimp (face_inK hc).
-rewrite /Ldim (eq_bigr (fun i => (#|image_set lam (uof c) (Sof c) i| - 1)%N)).
-  exact: hh.
-by move=> i _; rewrite image_mspN.
-Qed.
-
-Let hokf (c f : cN) : inK c -> (bd1 c : {ffun cN -> R^o}) f != 0 -> inK f.
-Proof. by move=> hc /bd1_supp[j hj [->|->]]; move: (inK_fv hc hj) => /andP[]. Qed.
-
-Let hdim (c f : cN) : inK c -> (bd1 c : {ffun cN -> R^o}) f != 0 ->
-  dimN f = (dimN c).-1.
-Proof. by move=> _ /bd1_supp[j hj [->|->]]; exact: dimN_fv. Qed.
-
-Let hdim0 (c : cN) : inK c -> dimN c = 0%N -> (bd1 c : {ffun cN -> R^o}) = 0.
-Proof.
-move=> _ h0; rewrite /bd1 big1 // => j _; apply: edgeterm_novtx.
-apply/negP => hj.
-have : j \in [set i | is_edge (c i)] by rewrite inE.
-by move: h0; rewrite /dimN => /eqP; rewrite cards_eq0 => /eqP ->; rewrite inE.
-Qed.
-
-Let hbdbd (c : cN) : inK c -> bd (bd1 c : {ffun cN -> R^o}) = 0.
-Proof. by move=> _; rewrite -(bd_cc c) bd_bd. Qed.
-
-Let haug (c : cN) : inK c -> (0 < dimN c)%N ->
-  \sum_(f : cN) (bd1 c : {ffun cN -> R^o}) f = 0.
-Proof. by move=> _ _; exact: bd1_aug. Qed.
-
-Let hne (c : cN) i : mspN c i != set0. Proof. exact: mspN_ne. Qed.
-
-Let hmono (c f : cN) : inK c -> (bd1 c : {ffun cN -> R^o}) f != 0 ->
-  Lsub (mspN f) (mspN c).
-Proof. by move=> _; exact: mspN_mono. Qed.
-
-Let hmdim (c : cN) : inK c -> (Ldim (mspN c) <= dimN c)%N.
-Proof. exact: mspN_dim. Qed.
-
-Definition muK : {ffun cN -> R^o} -> {ffun Lcell t p -> R^o} :=
-  chainmap.mu dimN (@bd1 n p NN R) mspN.
-Definition muK1 (c : cN) : {ffun Lcell t p -> R^o} :=
-  chainmap.mu1 dimN (@bd1 n p NN R) mspN c.
-
-Lemma muK_linE (x : {ffun cN -> R^o}) : muK x = lin muK1 x.
-Proof. by []. Qed.
-
-Lemma muK_bd (x : {ffun cN -> R^o}) : (forall c, x c != 0 -> inK c) ->
-  Lbd (muK x) = muK (bd x).
-Proof. exact: (chainmap.mu_bd hokf hdim hdim0 hbdbd haug hne hmono hmdim). Qed.
-
-Lemma muK_dim (c : cN) : inK c -> muK1 c != 0 -> Ldim (mspN c) = dimN c.
-Proof. exact: (chainmap.mu_dim hokf hdim hdim0 hbdbd haug hne hmono hmdim). Qed.
-
-Hypothesis hequiv : equivariant p_gt0 lam.
-
-Lemma mspN_shift (c : cN) : inK c -> mspN (shift p_gt0 c) = Lsh p_gt0 (mspN c).
-Proof.
-move=> hc; apply/ffunP => i; rewrite /Lsh !ffunE.
-apply/setP => x; apply/imsetP/imsetP => [[T _ ->]|[y hy ->]].
-  exists (lam (vsel c T) i); first by apply/imsetP; exists T; rewrite ?inE.
-  by rewrite vsel_shift (hequiv (forallP hc T) i).
-move: hy => /imsetP[T _ ->].
-by exists T; rewrite ?inE // vsel_shift (hequiv (forallP hc T) i).
-Qed.
-
-Lemma muK_equiv (x : {ffun cN -> R^o}) : (forall c, x c != 0 -> inK c) ->
-  muK (nu p_gt0 x) = Lnu p_gt0 (muK x).
-Proof.
-move=> hx; rewrite /nu.
-have h1 : forall c : cN, inK c -> inK (shift p_gt0 c).
-  by move=> c; exact: inK_shift.
-have h2 : forall c : cN, dimN (shift p_gt0 c) = dimN c.
-  by move=> c; exact: dimN_shift.
-have h3 : forall c : cN, inK c -> mspN (shift p_gt0 c) = Lsh p_gt0 (mspN c).
-  by move=> c; exact: mspN_shift.
-have h4 : forall c : cN, inK c ->
-  (bd1 (shift p_gt0 c) : {ffun cN -> R^o})
-  = lin (fun f : cN => cc (shift p_gt0 f)) (bd1 c).
-  by move=> c _; exact: bd1_shift.
-have HH := @chainmap.mu_equiv t p R cN dimN (@bd1 n p NN R) (@inK n p NN) mspN
-  hokf hdim hdim0 hbdbd haug hne hmono hmdim p_gt0 (shift p_gt0) h1 h2 h3 h4 x hx.
-exact: HH.
-Qed.
-
-(** ** the assembly (Meunier, proof of Theorem 3.3) *)
-
+Section Cells.
+Variables (p n : nat).
 Hypothesis n_gt0 : (0 < n)%N.
-Hypothesis t_gt0 : (0 < t)%N.
-Hypothesis p_prime : prime p.
-Hypothesis pR : (p%:R = 0 :> R).
+Local Abbreviation F := 'Z_p.
 
-Let NNgt0 : (0 < NN)%N := ltn0Sn _.
+(** A factor of a cell is the vertex [(false, k, r)] at distance [k] from the centre on the path
+    [r], or the edge [(true, k, r)] between the vertices at distances [k] and [k.+1].  The centre is
+    omitted. *)
+Definition entry := (bool * nat * F)%type.
+Definition cell := seq entry.
+Definition vtx k (r : F) : cell := if k is _.+1 then [:: (false, k, r)] else [::].
+Definition edge k (r : F) : entry := (true, k, r).
+Implicit Types (x : entry) (c : cell) (phi psi : cell -> F) (l : seq F).
 
-Local Abbreviation hK := (@hemispheres.h n p NN R p_gt0 NNgt0).
-Local Abbreviation etaL := (@eta.eta t p p_gt0 t_gt0 R).
-Local Abbreviation phiB := (@bar.phi p NN R).
-Local Abbreviation nuK := (@hemispheres.nu n p NN R p_gt0).
-Local Abbreviation sigK := (@hemispheres.sigma n p NN R p_gt0).
-Local Abbreviation nupowK := (@hemispheres.nupow n p NN R p_gt0).
-Local Abbreviation nuBB := (@bar.nuB p NN p_gt0 R).
+Definition sgn x : F := if x.1.1 then -1 else 1.
 
-Definition EK (x : {ffun cN -> R^o}) := etaL (muK x).
-Definition Psi (d : nat) (x : {ffun cN -> R^o}) : R := phiB d (EK x).
+(** The facets of a cell, with signs. *)
+Fixpoint facets c : seq (F * cell) := if c is x :: c' then
+    (if x.1.1 then [:: (1, vtx x.1.2.+1 x.2 ++ c'); (-1, vtx x.1.2 x.2 ++ c')] else [::])
+    ++ [seq (sgn x * f.1, x :: f.2) | f <- facets c']
+  else [::].
 
-Definition goodK (x : {ffun cN -> R^o}) : Prop :=
-  forall c, x c != 0 -> inK c /\ (dimN c < t * p.-1)%N.
+(** The coboundary. *)
+Definition cobd phi c : F := \sum_(f <- facets c) f.1 * phi f.2.
 
-Lemma goodK_inK x : goodK x -> forall c, x c != 0 -> inK c.
-Proof. by move=> h c hc; move: (h c hc) => []. Qed.
-
-Lemma muK_supp (x : {ffun cN -> R^o}) s : (muK x) s != 0 ->
-  exists2 c, x c != 0 & muK1 c != 0 /\ s = mspN c.
+Lemma cobd_cons phi x c : cobd phi (x :: c) =
+  (if x.1.1 then phi (vtx x.1.2.+1 x.2 ++ c) - phi (vtx x.1.2 x.2 ++ c) else 0)
+  + sgn x * cobd (fun c' => phi (x :: c')) c.
 Proof.
-rewrite muK_linE /lin => /supp_bigsum[c _ hc].
-have hx : x c != 0 by apply: contraNN hc => /eqP e; rewrite e scale0r ffunE eqxx.
-exists c => //.
-have hm : (muK1 c) s != 0.
-  by apply: contraNN hc => /eqP e; rewrite scale_ffunE e mulr0 eqxx.
-split.
-  by apply/eqP => e; move: hm; rewrite e ffunE eqxx.
-have [a ha] := chainmap.mu1_shape dimN (@bd1 n p NN R) mspN c.
-move: hm; rewrite /muK1 ha scale_ffunE ccE.
-by case: (eqVneq s (mspN c)) => // _; rewrite mulr0 eqxx.
+rewrite /cobd /= big_cat big_map big_distrr /=; congr (_ + _); last first.
+  by apply: eq_bigr => f _; rewrite mulrA.
+by case: ifP => _; rewrite ?big_nil // !big_cons big_nil mul1r mulN1r addr0.
 Qed.
 
-Lemma goodK_okL x : goodK x -> forall s, (muK x) s != 0 -> eta.okL s.
+Lemma eq_cobd phi psi c :
+  (forall f, f \in facets c -> phi f.2 = psi f.2) -> cobd phi c = cobd psi c.
+Proof. by move=> e; apply: eq_big_seq => f /e->. Qed.
+
+Lemma lin_cobd c : lin (cobd^~ c).
 Proof.
-move=> hx s /muK_supp[c hc [hm ->]].
-have [hin hd] := hx c hc.
-rewrite /eta.okL; apply/andP; split.
-  by apply/forallP => i; exact: mspN_ne.
-apply/eqP => e; move: hd; rewrite -(muK_dim hin hm) e eta.Ldim_topL.
-by rewrite ltnn.
+split=> [phi psi e|a phi psi]; first exact: eq_cobd.
+by rewrite /cobd mulr_sumr -big_split; apply: eq_bigr => f _; rewrite mulrDr mulrCA.
 Qed.
 
-Lemma goodK_nu x : goodK x -> goodK (nuK x).
+Lemma cobd_const a c : cobd (fun=> a) c = 0.
 Proof.
-move=> hx c hc.
-have [c0 hc0 <-] := lin_cc_supp (g := shift p_gt0) hc.
-have [hin hd] := hx c0 hc0.
-by rewrite dimN_shift; split => //; exact: inK_shift.
+elim: c => [|x c IH]; first by rewrite /cobd big_nil.
+by rewrite cobd_cons IH mulr0 subrr if_same addr0.
 Qed.
 
-Lemma goodK_h d : (d < t * p.-1)%N -> goodK (hK d).
+Lemma cobd_vtx phi k r c : cobd phi (vtx k r ++ c) = cobd (fun c' => phi (vtx k r ++ c')) c.
+Proof. by case: k => [|k] //=; rewrite cobd_cons /= add0r mul1r. Qed.
+
+Lemma cobdK phi c : cobd (cobd phi) c = 0.
 Proof.
-move=> hd; have hdN : (d < NN)%N by rewrite ltnW.
-move=> c hc; split.
-  by have := @h_inK n p NN R n_gt0 p_gt0 pR NNgt0 d hdN c hc.
-by have := @homd_h n p NN p_gt0 NNgt0 R d hdN c hc => ->.
+elim: c phi => [|x c IH] phi; first by rewrite /cobd big_nil.
+rewrite cobd_cons; case: x => [[[] k] r]; rewrite /sgn /=; last first.
+  rewrite add0r mul1r -[RHS](IH (fun c => phi ((false, k, r) :: c))).
+  by apply: eq_cobd => f _; rewrite cobd_cons /= add0r mul1r.
+pose A c := phi (vtx k.+1 r ++ c) - phi (vtx k r ++ c).
+have -> : cobd (fun c => cobd phi ((true, k, r) :: c)) c =
+    cobd (fun c => A c - cobd (fun c => phi ((true, k, r) :: c)) c) c.
+  by apply: eq_cobd => f _; rewrite cobd_cons mulN1r.
+rewrite (linB _ _ (lin_cobd c)) IH subr0 (linB _ _ (lin_cobd c)).
+by rewrite -cobd_vtx -(cobd_vtx phi k) mulN1r subrr.
 Qed.
 
-(** *** [Psi] is linear *)
+(** Sum over the cells of the product of the paths of [l]. *)
+Fixpoint cubes l phi : F :=
+  if l is r :: l' then \sum_(k < n) cubes l' (fun c => phi (edge k r :: c)) else phi [::].
 
-Lemma PsiD d x y : Psi d (x + y) = Psi d x + Psi d y.
-Proof. by rewrite /Psi /EK muK_linE linD eta.etaD bar.phiD. Qed.
+(** Sum over the outer boundary of this product, where one factor is the end of its path. *)
+Fixpoint outer l phi : F := if l is r :: l' then
+    cubes l' (fun c => phi ((false, n, r) :: c))
+    - \sum_(k < n) outer l' (fun c => phi (edge k r :: c))
+  else 0.
 
-Lemma PsiZ d a x : Psi d (a *: x) = a * Psi d x.
-Proof. by rewrite /Psi /EK muK_linE linZ eta.etaZ bar.phiZ. Qed.
-
-Lemma PsiN d x : Psi d (- x) = - Psi d x.
-Proof. by rewrite -scaleN1r PsiZ mulN1r. Qed.
-
-Lemma Psi_sum d (I : finType) (F : I -> {ffun cN -> R^o}) :
-  Psi d (\sum_(i : I) F i) = \sum_(i : I) Psi d (F i).
+Lemma eq_cubes l phi psi :
+  (forall c, size c = size l -> phi c = psi c) -> cubes l phi = cubes l psi.
 Proof.
-rewrite /Psi /EK muK_linE lin_sum_cond.
-rewrite (@eta.eta_sum t p p_gt0 t_gt0 R I (fun i => lin muK1 (F i))).
-by rewrite bar.phi_sum.
+elim: l phi psi => [|r l IH] phi psi e /=; first exact: e.
+by apply: eq_bigr => k _; apply: IH => c sc; rewrite e //= sc.
 Qed.
 
-(** *** the two Stokes relations transported to K *)
-
-Lemma EK_nu x : goodK x -> EK (nuK x) = nuBB (EK x).
+Lemma lin_cubes l : lin (cubes l).
 Proof.
-move=> hx; rewrite /EK (muK_equiv (goodK_inK hx)).
-by have := @eta.eta_equivariant t p p_gt0 p_prime t_gt0 R (muK x) (goodK_okL hx) => ->.
+split=> [phi psi e|]; first exact: eq_cubes.
+elim: l => //= r l IH a phi psi.
+by rewrite mulr_sumr -big_split; apply: eq_bigr => k _; rewrite IH.
 Qed.
 
-Lemma EK_nupow r x : goodK x -> EK (nupowK r x) = iter r nuBB (EK x).
+Lemma cubes_cobd l phi : cubes l (cobd phi) = outer l phi - delta (fun l => cubes l phi) l.
 Proof.
-elim: r x => [|r IH] x hx; first by rewrite /nupow /=.
-rewrite /nupow iterSr -/(nupow p_gt0 r (nuK x)) (IH _ (goodK_nu hx)).
-by rewrite (EK_nu hx) -iterSr.
+elim: l phi => [|r l IH] phi /=; first by rewrite /cobd big_nil subr0.
+pose g k := cubes l (fun c => phi (vtx k r ++ c)).
+pose h (k : 'I_n) c := phi (edge k r :: c).
+transitivity (\sum_(k < n) (g k.+1 - g k - cubes l (cobd (h k)))).
+  apply: eq_bigr => k _; rewrite -!(linB _ _ (lin_cubes l)); apply: eq_cubes => c _.
+  by rewrite cobd_cons /= mulN1r.
+rewrite sumrB -(big_mkord xpredT (fun k => g k.+1 - g k)) telescope_sumr //.
+rewrite (lin_sum _ (lin_delta l)) (eq_bigr _ (fun k _ => IH (h k))) sumrB.
+have -> : g n = cubes l (fun c => phi ((false, n, r) :: c)) by rewrite /g; case: (n) n_gt0.
+by rewrite !opprD !opprK addrACA.
 Qed.
 
-Lemma Psi_bd_even l x : ((2 * l).+2 <= NN)%N -> goodK x ->
-  Psi (2 * l) (bd x) = Psi (2 * l).+1 (nuK x) - Psi (2 * l).+1 x.
+Lemma outer_cobd l phi : outer l (cobd phi) = delta (fun l => outer l phi) l.
 Proof.
-move=> hM hx; rewrite /Psi /EK -(muK_bd (goodK_inK hx)).
-have hch := @eta.eta_chainmap t p p_gt0 p_prime t_gt0 R (muK x) (goodK_okL hx).
-rewrite -/(Lbd (muK x)) -hch (@bar.phi_bd_even p NN p_gt0 R l (EK x) hM).
-by congr (_ - _); rewrite -(EK_nu hx).
+have outerE psi l' : outer l' psi = cubes l' (cobd psi) + delta (fun l => cubes l psi) l'.
+  by rewrite cubes_cobd subrK.
+rewrite outerE (eq_cubes (fun c _ => cobdK phi c)) (lin0 (lin_cubes l)) add0r.
+rewrite (eq_delta (fun l' _ => cubes_cobd l' phi)) (linB _ _ (lin_delta l)).
+by rewrite deltaK subr0.
 Qed.
 
-Lemma Psi_bd_odd l x : ((2 * l).+3 <= NN)%N -> goodK x ->
-  Psi (2 * l).+1 (bd x) = \sum_(r < p) Psi (2 * l).+2 (nupowK r x).
+(** The cells of K: one factor is the end of a path. *)
+Definition full c := has (fun x => ~~ x.1.1 && (x.1.2 == n)) c.
+
+Lemma facets_cons x c (P : cell -> Prop) :
+  (x.1.1 -> P (vtx x.1.2.+1 x.2 ++ c)) -> (x.1.1 -> P (vtx x.1.2 x.2 ++ c)) ->
+  (forall f, f \in facets c -> P (x :: f.2)) -> forall f, f \in facets (x :: c) -> P f.2.
 Proof.
-move=> hM hx.
-rewrite (eq_bigr (fun r : 'I_p => phiB (2*l).+2 (iter (val r) nuBB (EK x))));
-  last by move=> r _; rewrite /Psi (EK_nupow (val r) hx).
-rewrite /Psi /EK -(muK_bd (goodK_inK hx)).
-have hch := @eta.eta_chainmap t p p_gt0 p_prime t_gt0 R (muK x) (goodK_okL hx).
-rewrite -/(Lbd (muK x)) -hch.
-exact: (@bar.phi_bd_odd p NN p_gt0 R l (EK x) hM).
+move=> Pt Pb Pc f; rewrite mem_cat => /orP[|/mapP[g gc ->]]; last exact: Pc.
+by case: ifP => // xe; rewrite !inE => /orP[] /eqP->; [apply: Pt | apply: Pb].
 Qed.
 
-(** *** the induction of the proof of Theorem 3.3 *)
-
-Let D := (t * p.-1)%N.
-
-Lemma D_gt0 : (0 < D)%N.
-Proof. by rewrite /D muln_gt0 t_gt0 /= -subn1 subn_gt0 prime_gt1. Qed.
-
-Lemma muK1_dim0 (c : cN) : dimN c = 0%N -> muK1 c = cc (mspN c).
-Proof. by move=> h0; rewrite /muK1 /chainmap.mu1 h0. Qed.
-
-Lemma baseA : Psi 0 (sigK (hK 0)) = 1.
+Lemma size_facet c f : f \in facets c -> (size f.2 <= size c)%N.
 Proof.
-have hg : goodK (hK 0) by apply: goodK_h; exact: D_gt0.
-rewrite /sigma Psi_sum.
-rewrite (eq_bigr (fun r : 'I_p => phiB 0 (iter (val r) nuBB (EK (hK 0)))));
-  last by move=> r _; rewrite /Psi (EK_nupow (val r) hg).
-have [c0 hc0] : exists c0 : cN, hK 0 = cc c0.
-  exists (setc (o_cell n p NN) (pc NNgt0 0) (Vtx (topv n_gt0 p_gt0))).
-  exact: (@h0_val n p NN R n_gt0 p_gt0 NNgt0).
-have hcc0 : (hK 0) c0 != 0 by rewrite hc0 ccE eqxx oner_neq0.
-have hd0 : dimN c0 = 0%N by have := @homd_h n p NN p_gt0 NNgt0 R 0 NNgt0 c0 hcc0.
-have hin0 : inK c0 by have := @h_inK n p NN R n_gt0 p_gt0 pR NNgt0 0 NNgt0 c0 hcc0.
-have hL0 : Ldim (mspN c0) = 0%N.
-  by apply/eqP; rewrite -leqn0 -hd0; exact: (hmdim hin0).
-have hok0 : eta.okL (mspN c0).
-  rewrite /eta.okL; apply/andP; split; first by apply/forallP => i; exact: mspN_ne.
-  apply/eqP => e; move: hL0; rewrite e eta.Ldim_topL => e2.
-  by move: D_gt0; rewrite /D e2 ltnn.
-rewrite /EK hc0 muK_linE lin_cc (muK1_dim0 hd0) eta.eta_cc.
-rewrite (eta.eta_vertex p_gt0 t_gt0 R hok0 hL0).
-apply: (@bar.phi0_orbit p NN p_gt0 R).
-by rewrite bar.sq_padd.
+elim: c f => // x c IH; apply: (facets_cons (P := fun c' => (size c' <= (size c).+1)%N)) => //.
+by move=> _; case: (x.1.2) => //=.
 Qed.
 
-Lemma stepA l : ((2 * l).+1 < D)%N -> Psi (2 * l) (sigK (hK (2 * l))) = 1 ->
-  Psi (2 * l).+1 (nuK (hK (2 * l).+1) - hK (2 * l).+1) = 1.
+Lemma full_facet c f : full c -> f \in facets c -> full f.2.
 Proof.
-move=> hl hA.
-have hM : ((2 * l).+1 < NN)%N by rewrite /NN ltnS ltnW.
-have hg : goodK (hK (2 * l).+1) by apply: goodK_h.
-have hb := @Psi_bd_even l (hK (2 * l).+1) hM hg.
-move: hb; rewrite (@hrel_odd n p NN R p_gt0 pR NNgt0 l) hA => hb.
-by rewrite PsiD PsiN -hb.
+elim: c f => // x c IH f fx; have fc : x.1.1 -> full c by move: fx; rewrite /full /= => /[swap]->.
+apply: (facets_cons (P := full)) => [/fc|/fc|g gc].
+- by rewrite /full /= => ->; rewrite orbT.
+- by case: (x.1.2) => // k; rewrite /full /= => ->; rewrite orbT.
+- by move: fx; rewrite /full /= => /orP[->//|fc']; rewrite [has _ _](IH g) ?orbT.
 Qed.
 
-Lemma stepB l : ((2 * l).+2 < D)%N ->
-  Psi (2 * l).+1 (nuK (hK (2 * l).+1) - hK (2 * l).+1) = 1 ->
-  Psi (2 * (l.+1)) (sigK (hK (2 * (l.+1)))) = 1.
+Lemma eq_outer l phi psi :
+  (forall c, full c -> (size c <= size l)%N -> phi c = psi c) -> outer l phi = outer l psi.
 Proof.
-move=> hl hB.
-have hM : ((2 * l).+2 < NN)%N by rewrite /NN ltnS ltnW.
-have he : (2 * l.+1 = (2 * l).+2)%N by rewrite mulnSr addn2.
-have hg : goodK (hK (2 * l).+2) by apply: goodK_h.
-have hb := @Psi_bd_odd l (hK (2 * l).+2) hM hg.
-move: hb; rewrite (@hrel_even n p NN R p_gt0 pR NNgt0 l) hB => hb.
-by rewrite he /sigma Psi_sum -hb.
+elim: l phi psi => //= r l IH phi psi e; congr (_ - _).
+  by apply: eq_cubes => c sc; apply: e; rewrite /= ?sc // /full /= eqxx.
+apply: eq_bigr => k _; apply: IH => c fc sc; exact: e.
 Qed.
 
-Lemma indA : forall l, (2 * l < D)%N -> Psi (2 * l) (sigK (hK (2 * l))) = 1.
+Lemma lin_outer l : lin (outer l).
 Proof.
-elim=> [|l IH] hl; first by rewrite muln0; exact: baseA.
-have he : (2 * l.+1 = (2 * l).+2)%N by rewrite mulnSr addn2.
-have hl2 : ((2 * l).+2 < D)%N by rewrite -he.
-have h2 : (2 * l < D)%N by apply: ltn_trans hl2; rewrite ltnS leqnSn.
-apply: (@stepB l hl2).
-by apply: (@stepA l (ltnW hl2)); exact: IH.
+split=> [phi psi e|]; first exact: eq_outer.
+elim: l => [|r l IH] a phi psi /=; first by rewrite mulr0 addr0.
+rewrite (lin_cubes l).2 mulrBr mulr_sumr addrACA -opprD -big_split /=.
+by congr (_ - _); apply: eq_bigr => k _; rewrite IH.
 Qed.
 
-Lemma indB : forall l, ((2 * l).+1 < D)%N ->
-  Psi (2 * l).+1 (nuK (hK (2 * l).+1) - hK (2 * l).+1) = 1.
+(** The action of Z_p on cells. *)
+Definition shc (k : F) c : cell := [seq (x.1, x.2 + k) | x <- c].
+
+Lemma cubes_sh k l phi : cubes (sh k l) phi = cubes l (fun c => phi (shc k c)).
+Proof. by elim: l phi => //= r l IH phi; apply: eq_bigr => j _; rewrite IH. Qed.
+
+Lemma outer_sh k l phi : outer (sh k l) phi = outer l (fun c => phi (shc k c)).
 Proof.
-move=> l hl; apply: (@stepA l hl); apply: indA.
-by apply: ltn_trans hl; rewrite ltnSn.
+elim: l phi => //= r l IH phi; congr (_ - _); last by apply: eq_bigr => j _; rewrite IH.
+exact: cubes_sh.
 Qed.
 
-Lemma keyD : Psi D.-1 (bd (hK D)) = 1.
+Lemma cobd_sh k c phi : cobd phi (shc k c) = cobd (fun c => phi (shc k c)) c.
 Proof.
-have hD := D_gt0.
-case hpar : (odd D.-1).
-  have [l hl] : exists l, D.-1 = (2 * l).+1.
-    by exists (D.-1)./2; rewrite -[in LHS](odd_double_half D.-1) hpar mul2n.
-  have hlt : ((2 * l).+1 < D)%N by rewrite -hl ltn_predL.
-  have hDe : D = (2 * l).+2 by rewrite -hl prednK.
-  rewrite hl hDe (@hrel_even n p NN R p_gt0 pR NNgt0 l).
-  exact: (@indB l hlt).
-have [l hl] : exists l, D.-1 = (2 * l)%N.
-  by exists (D.-1)./2; rewrite -[in LHS](odd_double_half D.-1) hpar mul2n.
-have hlt : (2 * l < D)%N by rewrite -hl ltn_predL.
-have hDe : D = (2 * l).+1 by rewrite -hl prednK.
-rewrite hl hDe (@hrel_odd n p NN R p_gt0 pR NNgt0 l).
-exact: (@indA l hlt).
+have vtx_sh j r c' : vtx j (r + k) ++ shc k c' = shc k (vtx j r ++ c') by case: j.
+elim: c phi => [|x c IH] phi; first by rewrite /cobd !big_nil.
+by rewrite [shc _ _]/= !cobd_cons /= -/(shc k c) !vtx_sh IH.
 Qed.
 
-(** *** extraction of the top face *)
+(** ** The Tucker lemma *)
 
-Lemma muK_hD_neq0 : muK (hK D) != 0.
+Section Tucker.
+Variables (M : nat) (m : cell -> F) (rk : cell -> nat).
+(** The cells with at most [M.+1] factors; [m] and [rk] are the two components of the label. *)
+Definition inK c := full c && (size c <= M.+1)%N.
+Hypothesis m_sh : forall k c, inK c -> m (shc k c) = m c + k.
+Hypothesis rk_lt : forall c, inK c -> (rk c < M)%N.
+Hypothesis rk_facet : forall c f, inK c -> f \in facets c -> m f.2 = m c \/ (rk f.2 < rk c)%N.
+
+(** Sum over the flags of faces of [c], from [c] to dimension 0, of [u] on their labels. *)
+Fixpoint pull d (u : seq F -> F) c : F :=
+  if d is d'.+1 then cobd (pull d' (fun l => u (m c :: l))) c else u [:: m c].
+
+Lemma eq_pull d u v c : (forall l, size l = d.+1 -> u l = v l) -> pull d u c = pull d v c.
 Proof.
-have hin : forall c, (hK D) c != 0 -> inK c.
-  by move=> c hc; have := @h_inK n p NN R n_gt0 p_gt0 pR NNgt0 D (ltnSn _) c hc.
-apply/eqP => e.
-have h1 := keyD.
-move: h1; rewrite /Psi /EK -(muK_bd hin) e /Lbd lin0 eta.eta0 bar.phi0 => /esym/eqP.
-by rewrite oner_eq0.
+elim: d u v c => [|d IH] u v c e /=; first exact: e.
+by apply: eq_cobd => f _; apply: IH => l sl; rewrite e //= sl.
 Qed.
 
-Lemma key_cell : exists c : cN,
-  [/\ inK c, dimN c = D & forall i, mspN c i = setT].
+Lemma lin_pull d c : lin (fun u => pull d u c).
 Proof.
-have hin : forall c, (hK D) c != 0 -> inK c.
-  by move=> c hc; have := @h_inK n p NN R n_gt0 p_gt0 pR NNgt0 D (ltnSn _) c hc.
-have [s hs] := chain_neq0 muK_hD_neq0.
-have [c hc [hm _]] := muK_supp hs.
-have hd : dimN c = D by have := @homd_h n p NN p_gt0 NNgt0 R D (ltnSn _) c hc.
-have hLd : Ldim (mspN c) = (t * p.-1)%N by rewrite (muK_dim (hin c hc) hm) hd.
-have hnok : ~~ eta.okL (mspN c).
-  apply/negP => hok.
-  by move: (eta.okL_Ldim p_gt0 hok); rewrite hLd ltnn.
-have htop : mspN c = eta.topL t p.
-  move: hnok; rewrite /eta.okL negb_and.
-  have -> : [forall i, mspN c i != set0] by apply/forallP => i; exact: mspN_ne.
-  by rewrite /= negbK => /eqP.
-exists c; split; [exact: (hin c hc) | exact: hd | ].
-by move=> i; rewrite htop /eta.topL ffunE.
+split=> [u v uv|]; first exact: eq_pull.
+elim: d c => //= d IH c a u v; rewrite -(lin_cobd c).2.
+by apply: eq_cobd => f _; rewrite IH.
 Qed.
 
-End Induced.
-
-End Glue.
-
-(** ** Theorem 3.3 of Meunier (2014): the ℤ_p-simplotopal Tucker lemma,
-       prime case. *)
-
-Theorem zp_tucker_prime (n t p : nat) (p_gt0 : (0 < p)%N) :
-  prime p -> (0 < t)%N -> @zp_tucker n t p p_gt0.
+Lemma pull_delta d u c : pull d.+1 (delta u) c = cobd (pull d u) c.
 Proof.
-move=> p_prime t_gt0 n_gt0 mu hequiv hsimp.
-pose Rp : comNzRingType := 'F_p.
-have pR : (p%:R = 0 :> Rp) by apply: pcharf0; exact: pchar_Fp.
-have [c [hin hd hmsp]] :=
-  @key_cell n t p p_gt0 Rp mu hsimp hequiv n_gt0 t_gt0 p_prime pR.
-exists (uof c), (Sof c); split.
-- exact: face_inK hin.
-- by rewrite card_Sof hd.
-- by move=> i; rewrite image_mspN hmsp.
+elim: d u c => [|d IH] u c.
+  by rewrite [LHS](linB _ _ (lin_cobd c)) (cobd_const (_ - _)) subr0.
+pose w l := u (m c :: l); rewrite -[RHS]subr0 -(cobdK (pull d w) c) -(linB _ _ (lin_cobd c)).
+apply: eq_cobd => f _; rewrite -(IH w); exact: (linB u _ (lin_pull d.+1 f.2)).
 Qed.
+
+Lemma inK_facet c f : inK c -> f \in facets c -> inK f.2.
+Proof.
+case/andP=> fc sc cf; rewrite /inK (full_facet fc cf) /=.
+exact: leq_trans (size_facet cf) sc.
+Qed.
+
+Lemma pull_sh d u k c : inK c -> pull d u (shc k c) = pull d (fun l => u (sh k l)) c.
+Proof.
+elim: d u c => [|d IH] u c Kc /=; first by rewrite m_sh.
+rewrite cobd_sh; apply: eq_cobd => f fc; rewrite IH ?(inK_facet Kc) //.
+by apply: eq_pull => l _; rewrite m_sh.
+Qed.
+
+Lemma pull_eq0 d u c : inK c -> nml d u -> (rk c < d)%N -> pull d u c = 0.
+Proof.
+elim: d u c => //= d IH u c Kc nu; rewrite ltnS => rc.
+rewrite -(cobd_const 0 c); apply: eq_cobd => f fc; have Kf := inK_facet Kc fc.
+have [mf|rf] := rk_facet Kc fc; last by apply: IH (leq_trans rf rc) => //; apply: nml_cons.
+case: d nu {IH rc} => [|d] nu /=; first by rewrite -mf; apply: (nu [::]).
+rewrite -(cobd_const 0 f.2); apply: eq_cobd => g _; rewrite -(lin0 (lin_pull d g.2)).
+by apply: eq_pull => l sl; rewrite -mf; apply: (nu [::]); rewrite sl.
+Qed.
+
+(** Sum over the hemisphere of dimension [d] (Meunier (2014), Section 3.3), by induction. *)
+Fixpoint hemi d (u : seq F -> F) : F :=
+  if d is d'.+1 then hemi d' (act d' (fun l => u (0 :: l))) else u [:: 0].
+
+Lemma eq_hemi d u v : (forall l, size l = d.+1 -> u l = v l) -> hemi d u = hemi d v.
+Proof.
+elim: d u v => [|d IH] u v e /=; first exact: e.
+by apply: IH => l sl; apply: eq_act => l' sl'; rewrite e //= sl' sl.
+Qed.
+
+Lemma lin_hemi d : lin (hemi d).
+Proof.
+split=> [u v uv|]; first exact: eq_hemi.
+elim: d => //= d IH a u v; rewrite -IH; apply: eq_hemi => l _.
+by rewrite (lin_act d l).2.
+Qed.
+
+Lemma hemi_delta d u : hemi d.+1 (delta u) = hemi d (act d u).
+Proof.
+elim: d u => [|d IH] u; rewrite -[RHS]subr0.
+  rewrite [LHS](linB _ _ (lin_act 0 [:: 0])); congr (_ - _).
+  by rewrite /act /= subr0 sumr_const card_ord Zp_mulrn; apply/val_inj; rewrite /= modnMl.
+pose w l := u (0 :: l); rewrite -[X in _ - X](lin0 (lin_hemi d)).
+rewrite -[X in _ - X]((lin_hemi d).1 _ _ (actK d w)) -IH -(linB _ _ (lin_hemi d.+1)).
+by apply: (@eq_hemi d.+1) => l _; rewrite -act_delta -(linB _ _ (lin_act d.+1 l)).
+Qed.
+
+Definition ev d u := hemi d (fun l => outer l (pull d u)).
+
+Lemma act_outer d u l : (size l <= M.+1)%N ->
+  act d (fun l => outer l (pull d u)) l = outer l (pull d (act d u)).
+Proof.
+move=> sl; have e k : outer (sh k l) (pull d u) = outer l (pull d (fun l => u (sh k l))).
+  rewrite outer_sh; apply: eq_outer => c fc sc; apply: pull_sh.
+  by rewrite /inK fc (leq_trans sc).
+have ll := lin_outer l; rewrite /act; case: (odd d).
+  rewrite e -(linB _ _ ll); apply: ll.1 => c; rewrite -(linB _ _ (lin_pull d c)).
+  exact: eq_pull.
+rewrite (eq_bigr _ (fun k _ => e k)) -(lin_sum _ ll); apply: ll.1 => c.
+by rewrite -(lin_sum _ (lin_pull d c)); apply: eq_pull.
+Qed.
+
+Lemma ev_delta d u : (d <= M)%N -> ev d.+1 (delta u) = ev d (act d u).
+Proof.
+move=> dM; have e l : outer l (pull d.+1 (delta u)) = delta (fun l => outer l (pull d u)) l.
+  by rewrite -outer_cobd; apply: (lin_outer l).1 => c; apply: pull_delta.
+rewrite /ev (eq_hemi (fun l _ => e l)) hemi_delta; apply: eq_hemi => l sl.
+by apply: act_outer; rewrite sl.
+Qed.
+
+Lemma eq_ev d u v : (forall s, size s = d.+1 -> u s = v s) -> ev d u = ev d v.
+Proof.
+move=> uv; apply: eq_hemi => l _; apply: (lin_outer l).1 => c.
+exact: eq_pull.
+Qed.
+
+Theorem zp_tucker : False.
+Proof.
+have chain d : (d <= M)%N -> exists w, [/\ nml d w, ev d (act d w) = 1 &
+    forall s, size s = d.+2 -> delta (act d w) s = 0].
+  elim: d => [|d IH] dM.
+    have e s : s != [::] -> act 0 (prim 0 (fun=> 1)) s = 1.
+      by move=> s0; rewrite primK // => k; rewrite /act /= subrr.
+    exists (prim 0 (fun=> 1)); split=> [|| [|x [|y []]] //= _].
+    - exact: nml_prim.
+    - rewrite (@eq_ev 0 _ (fun=> 1)) => [[|x s] // _|]; first exact: e.
+      by rewrite /ev /= big1_eq subr0.
+    - by rewrite !e // !subr0 subrr.
+  have [w [nw ew dw]] := IH (ltnW dM); pose u := delta w.
+  have e s : size s = d.+2 -> act d.+1 (prim d.+1 u) s = u s.
+    move=> ss; apply: primK => [|k]; first by case: (s) ss.
+    by rewrite {1}/act /= negbK -/(act d u _) act_delta dw ?size_map.
+  exists (prim d.+1 u); split; first exact/nml_prim/nml_delta.
+    by rewrite (eq_ev e) /u ev_delta // ltnW.
+  move=> s ss; rewrite (@eq_delta _ _ u) ?deltaK // => l sl; apply: e.
+  by case: (s) ss sl => //= ? ? [->] [->].
+have [w [nw ew _]] := chain M (leqnn M).
+have : ev M (act M w) = 0; last by rewrite ew => /eqP; rewrite oner_eq0.
+rewrite /ev -[RHS](lin0 (lin_hemi M)); apply: eq_hemi => l sl.
+rewrite -[RHS](lin0 (lin_outer l)); apply: eq_outer => c fc sc.
+have Kc : inK c by rewrite /inK fc -sl.
+by rewrite (pull_eq0 Kc (nml_act nw)) // rk_lt.
+Qed.
+
+End Tucker.
+
+End Cells.
