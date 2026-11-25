@@ -20,7 +20,7 @@ We rely on the following Rocq libraries:
 
 ### Conjectures
 
-Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in the Rocq file `main.v`. An opening comment presents the non-standard definitions and the conjecture statement in English. Then come all necessary definitions that are not in MathComp or GraphTheory, with a comment separating those of the local graph library (which are copied to make the file self-contained) from those more specific to the conjecture. Finally, a proposition named `conj_name` states the conjecture.
+Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` is the canonical name of the conjecture (according to `graph-conjectures/data/conjecture_names.json`). It is formalized in the Rocq file `main.v`. An opening comment presents the non-standard definitions and the conjecture statement in English. Then come all necessary definitions that are not in MathComp or GraphTheory, with a comment separating those of the local graph library (which are copied to make the file self-contained) from those more specific to the conjecture. Finally, a proposition named `conj_name` states the conjecture. If the proposition is only a proxy of the conjecture (weaker, stronger or incomparable, because some notion is not formalized), it is named `proxy_conj_name` and the opening comment explains the difference. The names in `proof.v` are then prefixed accordingly (`proxy_conj_name_holds` or `proxy_conj_name_fails`).
 
 ### Conjecture proofs
 
@@ -44,10 +44,11 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [conjectures.md](progress/conjectures.md) (1 statements formalized)
-- [conjecture-proofs.md](progress/conjecture-proofs.md) (1 conjectures proved or disproved)
+- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 10 proxies)
+- [conjecture-proofs.md](progress/conjecture-proofs.md) (18 conjectures proved or disproved, including 1 proxy)
 - [relation-proofs.md](progress/relation-proofs.md) (0 relations proved)
-- [graph-library.md](progress/graph-library.md) (3 definitions and 3 statements)
+- [graph-library.md](progress/graph-library.md) (673 definitions and 120 statements)
+- [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, statements that look false, choices and statuses to be checked)
 
 
 ## Installation

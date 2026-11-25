@@ -1,0 +1,10 @@
+From GC.chromatic.AX_large_chromatic_induced_path_uniquely_covered Require Import main(AX_large_chromatic_induced_path_uniquely_covered).
+From GC.chromatic.AX_large_chromatic_induced_path_uniquely_covered Require counterexample.
+
+Theorem AX_large_chromatic_induced_path_uniquely_covered_fails :
+  ~ AX_large_chromatic_induced_path_uniquely_covered.
+Proof. exact counterexample.not_uniquely_covered. Qed.
+
+Check (AX_large_chromatic_induced_path_uniquely_covered_fails :
+  ~ GC.chromatic.AX_large_chromatic_induced_path_uniquely_covered.main.AX_large_chromatic_induced_path_uniquely_covered).
+Print Assumptions AX_large_chromatic_induced_path_uniquely_covered_fails.

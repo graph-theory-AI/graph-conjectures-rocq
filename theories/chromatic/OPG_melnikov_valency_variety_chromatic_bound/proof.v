@@ -1,0 +1,10 @@
+From GC.chromatic.OPG_melnikov_valency_variety_chromatic_bound Require Import main(OPG_melnikov_valency_variety_chromatic_bound).
+From GC.chromatic.OPG_melnikov_valency_variety_chromatic_bound Require counterexample.
+
+Theorem OPG_melnikov_valency_variety_chromatic_bound_fails :
+  ~ OPG_melnikov_valency_variety_chromatic_bound.
+Proof. exact counterexample.counterexample. Qed.
+
+Check (OPG_melnikov_valency_variety_chromatic_bound_fails :
+  ~ GC.chromatic.OPG_melnikov_valency_variety_chromatic_bound.main.OPG_melnikov_valency_variety_chromatic_bound).
+Print Assumptions OPG_melnikov_valency_variety_chromatic_bound_fails.

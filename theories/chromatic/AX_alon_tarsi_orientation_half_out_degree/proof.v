@@ -1,0 +1,10 @@
+From GC.chromatic.AX_alon_tarsi_orientation_half_out_degree Require Import main(AX_alon_tarsi_orientation_half_out_degree).
+From GC.chromatic.AX_alon_tarsi_orientation_half_out_degree Require triangle.
+
+Theorem AX_alon_tarsi_orientation_half_out_degree_fails :
+  ~ AX_alon_tarsi_orientation_half_out_degree.
+Proof. exact triangle.triangle. Qed.
+
+Check (AX_alon_tarsi_orientation_half_out_degree_fails :
+  ~ GC.chromatic.AX_alon_tarsi_orientation_half_out_degree.main.AX_alon_tarsi_orientation_half_out_degree).
+Print Assumptions AX_alon_tarsi_orientation_half_out_degree_fails.

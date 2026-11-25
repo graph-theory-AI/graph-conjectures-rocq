@@ -8,6 +8,7 @@
 # make check C=theories/topic/conj_name
 # checks with rocq-comparator that proof.v proves the proposition conj_name of main.v
 # (theorem conj_name_holds) or its negation (theorem conj_name_fails), without axioms
+# (a proposition proxy_conj_name is treated in the same way)
 # (the generated files and the verdict are in _build/check/topic/conj_name)
 
 COMPARATOR ?= rocq-comparator
@@ -15,6 +16,7 @@ COMPARATOR ?= rocq-comparator
 DIR := $(patsubst %/,%,$(C))
 REL := $(patsubst theories/%,%,$(DIR))
 NAME := $(notdir $(DIR))
+STM = $(shell grep -qs '^Definition proxy_$(NAME)\>' $(DIR)/main.v && echo proxy_)$(NAME)
 MOD := GC.$(subst /,.,$(REL))
 OUT := _build/check/$(REL)
 
@@ -31,9 +33,9 @@ check:
 	  { echo "usage: make check C=theories/topic/conj_name"; exit 2; }
 	@mkdir -p $(OUT)
 	@rm -f $(OUT)/verdict.json
-	@if grep -q '^Theorem $(NAME)_fails\>' $(DIR)/proof.v; \
-	then thm=$(NAME)_fails; stm='~ $(MOD).main.$(NAME)'; \
-	else thm=$(NAME)_holds; stm='$(MOD).main.$(NAME)'; fi; \
+	@if grep -q '^Theorem $(STM)_fails\>' $(DIR)/proof.v; \
+	then thm=$(STM)_fails; stm='~ $(MOD).main.$(STM)'; \
+	else thm=$(STM)_holds; stm='$(MOD).main.$(STM)'; fi; \
 	printf 'Require %s.main.\nTheorem %s : %s.\nAdmitted.\n' \
 	  "$(MOD)" "$$thm" "$$stm" > $(OUT)/Challenge.v; \
 	printf 'Require %s.main.\nRequire %s.proof.\nTheorem %s : %s.\nProof. exact %s.proof.%s. Qed.\n' \

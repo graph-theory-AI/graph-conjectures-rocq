@@ -1,0 +1,9 @@
+From GC.extremal.AX_list_ramsey_chromatic_family_exact Require Import main(AX_list_ramsey_chromatic_family_exact).
+From GC.extremal.AX_list_ramsey_chromatic_family_exact Require product_coloring.
+
+Theorem AX_list_ramsey_chromatic_family_exact_holds : AX_list_ramsey_chromatic_family_exact.
+Proof. exact product_coloring.list_ramsey_chromatic_family. Qed.
+
+Check (AX_list_ramsey_chromatic_family_exact_holds :
+  GC.extremal.AX_list_ramsey_chromatic_family_exact.main.AX_list_ramsey_chromatic_family_exact).
+Print Assumptions AX_list_ramsey_chromatic_family_exact_holds.

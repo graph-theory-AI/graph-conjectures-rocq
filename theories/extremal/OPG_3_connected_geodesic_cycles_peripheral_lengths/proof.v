@@ -1,0 +1,10 @@
+From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require Import main(OPG_3_connected_geodesic_cycles_peripheral_lengths).
+From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require counterexample.
+
+Theorem OPG_3_connected_geodesic_cycles_peripheral_lengths_fails :
+  ~ OPG_3_connected_geodesic_cycles_peripheral_lengths.
+Proof. exact counterexample.counterexample. Qed.
+
+Check (OPG_3_connected_geodesic_cycles_peripheral_lengths_fails :
+  ~ GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths.main.OPG_3_connected_geodesic_cycles_peripheral_lengths).
+Print Assumptions OPG_3_connected_geodesic_cycles_peripheral_lengths_fails.

@@ -1,0 +1,10 @@
+From GC.digraph.AX_tournament_color_avoiding_path_non_transitive Require Import main(AX_tournament_color_avoiding_path_non_transitive).
+From GC.digraph.AX_tournament_color_avoiding_path_non_transitive Require nine_vertices.
+
+Theorem AX_tournament_color_avoiding_path_non_transitive_holds :
+  AX_tournament_color_avoiding_path_non_transitive.
+Proof. exact nine_vertices.non_transitive_nine. Qed.
+
+Check (AX_tournament_color_avoiding_path_non_transitive_holds :
+  GC.digraph.AX_tournament_color_avoiding_path_non_transitive.main.AX_tournament_color_avoiding_path_non_transitive).
+Print Assumptions AX_tournament_color_avoiding_path_non_transitive_holds.

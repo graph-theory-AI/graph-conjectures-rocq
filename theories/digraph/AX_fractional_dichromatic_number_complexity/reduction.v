@@ -111,7 +111,7 @@ by have := ltr_pwDl xA cov; rewrite ltNge tot.
 Qed.
 
 Theorem dicolorable_of_frac (R : realFieldType) (D : diGraph) :
-  frac_dicolorable (two_layer D) (2 : R) -> dicolorable D 2.
+  fractional_dicolorable (two_layer D) (2 : R) -> dicolorable D 2.
 Proof.
 case=> x [x0 cov tot]; apply/dicolorable2P.
 have [v0 _|D0] := pickP (@predT D); last first.
@@ -152,7 +152,7 @@ by rewrite -{}eij in vC *; case: i uC vC; rewrite ?addbT ?addbF => uC vC;
 Qed.
 
 Theorem frac_of_dicolorable (R : realFieldType) (D : diGraph) :
-  dicolorable D 2 -> frac_dicolorable (two_layer D) (2 : R).
+  dicolorable D 2 -> fractional_dicolorable (two_layer D) (2 : R).
 Proof.
 case/dicolorable2P => C [acC acC'].
 have acA : acyclic (induced (layers C)) by apply: acyclic_layers.
@@ -171,7 +171,7 @@ Qed.
 
 (** ** Main result *)
 
-Theorem reduction : main.AX_fractional_dichromatic_number_complexity.
+Theorem reduction : main.proxy_AX_fractional_dichromatic_number_complexity.
 Proof.
 move=> R D; split; last exact: num_edges_two_layer; last exact: card_two_layer.
 by split; [apply: dicolorable_of_frac|apply: frac_of_dicolorable].

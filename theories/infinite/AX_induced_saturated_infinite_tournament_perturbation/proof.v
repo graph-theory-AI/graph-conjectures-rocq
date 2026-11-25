@@ -1,0 +1,10 @@
+From GC.infinite.AX_induced_saturated_infinite_tournament_perturbation Require Import main(AX_induced_saturated_infinite_tournament_perturbation).
+From GC.infinite.AX_induced_saturated_infinite_tournament_perturbation Require counterexample.
+
+Theorem AX_induced_saturated_infinite_tournament_perturbation_fails :
+  ~ AX_induced_saturated_infinite_tournament_perturbation.
+Proof. exact counterexample.disproof. Qed.
+
+Check (AX_induced_saturated_infinite_tournament_perturbation_fails :
+  ~ GC.infinite.AX_induced_saturated_infinite_tournament_perturbation.main.AX_induced_saturated_infinite_tournament_perturbation).
+Print Assumptions AX_induced_saturated_infinite_tournament_perturbation_fails.

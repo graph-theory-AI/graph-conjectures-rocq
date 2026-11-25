@@ -1,0 +1,10 @@
+From GC.chromatic.AX_chromatic_cochromatic_gap_three_small_clique Require Import main(AX_chromatic_cochromatic_gap_three_small_clique).
+From GC.chromatic.AX_chromatic_cochromatic_gap_three_small_clique Require construction.
+
+Theorem AX_chromatic_cochromatic_gap_three_small_clique_holds :
+  AX_chromatic_cochromatic_gap_three_small_clique.
+Proof. exact construction.gap_three. Qed.
+
+Check (AX_chromatic_cochromatic_gap_three_small_clique_holds :
+  GC.chromatic.AX_chromatic_cochromatic_gap_three_small_clique.main.AX_chromatic_cochromatic_gap_three_small_clique).
+Print Assumptions AX_chromatic_cochromatic_gap_three_small_clique_holds.

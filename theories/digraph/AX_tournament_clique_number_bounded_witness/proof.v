@@ -1,0 +1,10 @@
+From GC.digraph.AX_tournament_clique_number_bounded_witness Require Import main(AX_tournament_clique_number_bounded_witness).
+From GC.digraph.AX_tournament_clique_number_bounded_witness Require counterexample.
+
+Theorem AX_tournament_clique_number_bounded_witness_fails :
+  ~ AX_tournament_clique_number_bounded_witness.
+Proof. exact counterexample.disproof. Qed.
+
+Check (AX_tournament_clique_number_bounded_witness_fails :
+  ~ GC.digraph.AX_tournament_clique_number_bounded_witness.main.AX_tournament_clique_number_bounded_witness).
+Print Assumptions AX_tournament_clique_number_bounded_witness_fails.

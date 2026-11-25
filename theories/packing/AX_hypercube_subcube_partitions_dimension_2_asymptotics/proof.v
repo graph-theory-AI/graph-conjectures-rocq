@@ -1,0 +1,10 @@
+From GC.packing.AX_hypercube_subcube_partitions_dimension_2_asymptotics Require Import main(AX_hypercube_subcube_partitions_dimension_2_asymptotics).
+From GC.packing.AX_hypercube_subcube_partitions_dimension_2_asymptotics Require asymptotics.
+
+Theorem AX_hypercube_subcube_partitions_dimension_2_asymptotics_holds :
+  AX_hypercube_subcube_partitions_dimension_2_asymptotics.
+Proof. exact asymptotics.asymptotics. Qed.
+
+Check (AX_hypercube_subcube_partitions_dimension_2_asymptotics_holds :
+  GC.packing.AX_hypercube_subcube_partitions_dimension_2_asymptotics.main.AX_hypercube_subcube_partitions_dimension_2_asymptotics).
+Print Assumptions AX_hypercube_subcube_partitions_dimension_2_asymptotics_holds.

@@ -13,14 +13,16 @@ Problem 3.21: for a fixed real p >= 1, decide whether χ_f(D) <= p.  It is polyn
 p = 1 and NP-complete for every p > 1 with p <> 2.  The authors believe that the open case
 p = 2 is NP-complete too.
 
-What is stated here is the reduction that gives this NP-completeness.  For a digraph D, let
-R(D) consist of two copies of D where each vertex is joined to its copy by a digon.  Then
-χ_f(R(D)) <= 2 if and only if χ(D) <= 2, and R(D) has 2|V| vertices and 2|A| + 2|V| arcs.
+What is stated here is only a proxy, as complexity classes are not formalized: the reduction
+that gives this NP-completeness.  For a digraph D, let R(D) consist of two copies of D where
+each vertex is joined to its copy by a digon.  Then χ_f(R(D)) <= 2 if and only if χ(D) <= 2,
+and R(D) has 2|V| vertices and 2|A| + 2|V| arcs.
 
-Complexity classes are not formalized.  The following remain outside the statement: deciding
-χ(D) <= 2 is NP-hard (Bokal, Fijavž, Juvan, Kayll, Mohar, J. Graph Theory 46, 2004), deciding
-χ_f(D) <= 2 is in NP (Observation 3.15 of the source), and R(D) is computable in polynomial
-time (its arcs are given by an explicit boolean formula, see [two_layer]).
+The proxy is stronger than the conjecture, which follows from it and from three facts that
+remain outside the statement: deciding χ(D) <= 2 is NP-hard (Bokal, Fijavž, Juvan, Kayll,
+Mohar, J. Graph Theory 46, 2004), deciding χ_f(D) <= 2 is in NP (Observation 3.15 of the
+source), and R(D) is computable in polynomial time (its arcs are given by an explicit boolean
+formula, see [two_layer]).
 
 Encoding.  Digraphs are those of GraphTheory ([diGraph]): a finite type of vertices with a
 boolean relation [--].  Digons are allowed, as in the source.  Parallel arcs are not
@@ -54,7 +56,7 @@ Definition dicolorable (D : diGraph) (k : nat) : Prop :=
 (** The fractional dichromatic number of [D] is at most [p]: nonnegative weights on the
     sets inducing an acyclic digraph, of total at most [p], cover each vertex with weight
     at least 1.  Weights are taken in an ordered field [R]. *)
-Definition frac_dicolorable (R : realFieldType) (D : diGraph) (p : R) : Prop :=
+Definition fractional_dicolorable (R : realFieldType) (D : diGraph) (p : R) : Prop :=
   (exists x : {set D} -> R,
     [/\ forall A : {set D}, 0 <= x A,
         forall v : D, 1 <= \sum_(A : {set D} | acyclic (induced A) && (v \in A)) x A
@@ -71,8 +73,8 @@ Definition two_layer (D : diGraph) : diGraph :=
 (** ** Statement *)
 
 (** The reduction that gives NP-completeness, as believed by the authors. *)
-Definition AX_fractional_dichromatic_number_complexity : Prop :=
+Definition proxy_AX_fractional_dichromatic_number_complexity : Prop :=
   forall (R : realFieldType) (D : diGraph),
-    [/\ frac_dicolorable (two_layer D) (2%R : R) <-> dicolorable D 2,
+    [/\ fractional_dicolorable (two_layer D) (2%R : R) <-> dicolorable D 2,
         #|two_layer D| = 2 * #|D|
       & num_edges (two_layer D) = 2 * num_edges D + 2 * #|D|].
