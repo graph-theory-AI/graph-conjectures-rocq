@@ -22,7 +22,7 @@
     split between q2 thieves [splits_prod]. *)
 
 From mathcomp Require Import boot algebra.
-From GC.GraphLib.necklace Require Import zp_tucker.
+From GC.GraphLib Require Import zp_tucker.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
