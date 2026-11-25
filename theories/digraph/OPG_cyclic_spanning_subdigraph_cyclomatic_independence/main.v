@@ -6,9 +6,8 @@ Open Problem Garden, cyclic_spanning_subdigraph_with_small_cyclomatic_number.
 A strong component of a digraph is trivial if it has a single vertex.  A digraph is cyclic if it
 is a disjoint union of nontrivial strong digraphs, or equivalently if it has no isolated vertex
 and each of its arcs lies on a directed cycle.  The cyclomatic number of a digraph with n
-vertices, m arcs and c connected components (of the underlying graph) is m - n + c.  It is
-m - n + 1 for a strong digraph.  The independence number α(D) is the maximum number of pairwise
-nonadjacent vertices of D.
+vertices and m arcs is m - n + 1 in the Open Problem Garden.  The independence number α(D) is the
+maximum number of pairwise nonadjacent vertices of D.
 
 Conjecture: every digraph D whose strong components are all nontrivial contains a cyclic
 spanning subdigraph with cyclomatic number at most α(D).
@@ -17,9 +16,13 @@ Encoding.  Digraphs are those of GraphTheory ([diGraph]): a finite type of verti
 boolean relation [--], assumed irreflexive (no loop).  Digons are allowed, and they are directed
 cycles.  Parallel arcs are not represented (they are useless here).  As there is no loop, the
 strong components are nontrivial if and only if every vertex lies on a directed cycle.  A
-spanning subdigraph is given by its arc set.  It may have several connected components, hence
-the general form m - n + c of the cyclomatic number (for instance, a disjoint union of p
-directed cycles has cyclomatic number p), although the Open Problem Garden gives m - n + 1. *)
+spanning subdigraph is given by its arc set.
+
+Proxy (stronger).  The spanning subdigraph may have several connected components, and
+[proxy_arcs_cyclomatic_number] is m - n + c, where c is the number of connected components of
+the underlying graph, instead of m - n + 1.  The two numbers are equal when c = 1; in general,
+m - n + c is at least m - n + 1 if D is nonempty (for instance, a disjoint union of p directed
+cycles gives p instead of 1), so that bounding it by α(D) is a stronger requirement. *)
 
 From GraphTheory Require Import preliminaries sgraph digraph.
 From mathcomp Require Import boot.
@@ -79,14 +82,15 @@ Definition cyclic_spanning (D : diGraph) (F : {set D * D}) : Prop :=
       forall v : B, exists w : B, v -- w
     & forall v w : B, v -- w -> exists2 c : seq B, dicycle c & (v, w) \in dicycle_arcs c].
 
-(** The cyclomatic number of the spanning subdigraph with arc set [F] (the subtraction is not
-    truncated, as m + c >= n). *)
-Definition arcs_cyclomatic_number (D : diGraph) (F : {set D * D}) : nat :=
+(** Proxy of the cyclomatic number of the spanning subdigraph with arc set [F]: m - n + c (the
+    subtraction is not truncated, as m + c >= n). *)
+Definition proxy_arcs_cyclomatic_number (D : diGraph) (F : {set D * D}) : nat :=
   #|F| + #|components [set: underlying (digraph_of_arcs F)]| - #|D|.
 
 (** ** Statement *)
 
-Definition OPG_cyclic_spanning_subdigraph_cyclomatic_independence : Prop :=
+Definition proxy_OPG_cyclic_spanning_subdigraph_cyclomatic_independence : Prop :=
   forall D : diGraph, irreflexive (@edge_rel D) ->
     (forall v : D, exists2 c : seq D, dicycle c & v \in c) ->
-    exists2 F : {set D * D}, cyclic_spanning F & arcs_cyclomatic_number F <= digraph_alpha D.
+    exists2 F : {set D * D},
+      cyclic_spanning F & proxy_arcs_cyclomatic_number F <= digraph_alpha D.

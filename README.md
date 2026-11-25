@@ -11,7 +11,7 @@ This repository is a companion to [graph-conjectures](https://github.com/graph-t
 - proofs of some relations between conjectures,
 - a tentative library for graph proofs.
 
-Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Each topic has a subdirectory in `theories/`. The library is in `theories/GraphLib/`, with one file per topic. Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
+Conjectures are grouped by topic: chromatic, digraph, extremal, hamiltonicity, hypergraph, etc., and misc for those that do not fit an identified topic. Each topic has a subdirectory in `theories/`. The library is in `theories/GraphLib/`, with one file per topic (or a subdirectory when a theorem needs many files, such as `necklace/`). Most of the work is done by prompting LLMs (mainly Claude and ChatGPT) and is still in progress.
 
 We rely on the following Rocq libraries:
 
@@ -44,11 +44,11 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 10 proxies)
-- [conjecture-proofs.md](progress/conjecture-proofs.md) (18 conjectures proved or disproved, including 1 proxy)
+- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 11 proxies)
+- [conjecture-proofs.md](progress/conjecture-proofs.md) (22 conjectures proved or disproved, including 1 proxy)
 - [relation-proofs.md](progress/relation-proofs.md) (0 relations proved)
-- [graph-library.md](progress/graph-library.md) (673 definitions and 120 statements)
-- [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, statements that look false, choices and statuses to be checked)
+- [graph-library.md](progress/graph-library.md) (677 definitions and 134 statements, plus the files of the necklace splitting theorem)
+- [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, disproved statements, choices and statuses to be checked; the column "user input" is for human decisions, signed with initials)
 
 
 ## Installation

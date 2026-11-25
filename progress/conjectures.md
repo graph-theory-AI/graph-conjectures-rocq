@@ -229,7 +229,7 @@
 | [OPG_bermond_thomassen_outdegree_disjoint_cycles](../theories/digraph/OPG_bermond_thomassen_outdegree_disjoint_cycles/main.v) |  |
 | [OPG_caccetta_haggkvist_outdegree_short_cycle](../theories/digraph/OPG_caccetta_haggkvist_outdegree_short_cycle/main.v) |  |
 | [OPG_chromatic_digraph_oriented_trees_2k](../theories/digraph/OPG_chromatic_digraph_oriented_trees_2k/main.v) |  |
-| [OPG_cyclic_spanning_subdigraph_cyclomatic_independence](../theories/digraph/OPG_cyclic_spanning_subdigraph_cyclomatic_independence/main.v) | cyclomatic number m - n + c (c components) |
+| [OPG_cyclic_spanning_subdigraph_cyclomatic_independence](../theories/digraph/OPG_cyclic_spanning_subdigraph_cyclomatic_independence/main.v) | proxy (stronger): cyclomatic number m - n + c (c components), instead of m - n + 1 |
 | [OPG_digraph_arc_disjoint_strong_spanning_subdigraphs](../theories/digraph/OPG_digraph_arc_disjoint_strong_spanning_subdigraphs/main.v) |  |
 | [OPG_digraph_arcs_antidirected_trees](../theories/digraph/OPG_digraph_arcs_antidirected_trees/main.v) |  |
 | [OPG_digraph_feedback_arcs_vs_non_edges](../theories/digraph/OPG_digraph_feedback_arcs_vs_non_edges/main.v) |  |

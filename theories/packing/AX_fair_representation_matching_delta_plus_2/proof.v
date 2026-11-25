@@ -1,0 +1,9 @@
+From GC.packing.AX_fair_representation_matching_delta_plus_2 Require Import main(AX_fair_representation_matching_delta_plus_2).
+From GC.packing.AX_fair_representation_matching_delta_plus_2 Require counterexample.
+
+Theorem AX_fair_representation_matching_delta_plus_2_fails : ~ AX_fair_representation_matching_delta_plus_2.
+Proof. exact counterexample.disproof. Qed.
+
+Check (AX_fair_representation_matching_delta_plus_2_fails :
+  ~ GC.packing.AX_fair_representation_matching_delta_plus_2.main.AX_fair_representation_matching_delta_plus_2).
+Print Assumptions AX_fair_representation_matching_delta_plus_2_fails.
