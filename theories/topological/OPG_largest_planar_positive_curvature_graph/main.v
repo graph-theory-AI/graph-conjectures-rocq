@@ -113,15 +113,6 @@ Definition planar_embedding (E : embedding) : Prop := embedding_genus E = 0.
 (** The length of the face containing [d]. *)
 Definition face_size (E : embedding) (d : dart) : nat := #|face_of E d|.
 
-(** The combinatorial curvature at [v]: [1 - deg v / 2 + sum of 1 / |f|], where [f] ranges over
-    the faces around [v]. *)
-Definition combinatorial_curvature (E : embedding) (v : G) : rat :=
-  (1 - (#|darts_at v|)%:R / 2%:R + \sum_(d in darts_at v) 1 / (face_size E d)%:R)%R.
-
-(** The combinatorial curvature is positive at each vertex. *)
-Definition positive_curvature (E : embedding) : Prop :=
-  forall v : G, (0 < combinatorial_curvature E v)%R.
-
 End Embedding.
 
 Section Antiprism.
@@ -146,6 +137,22 @@ Definition is_prism (G : sgraph) : Prop :=
 (** [G] is an antiprism. *)
 Definition is_antiprism (G : sgraph) : Prop :=
   exists n : nat, 2 < n /\ inhabited (G ≃ antiprism n).
+
+(** ** Definitions copied from GraphLib/geometric.v *)
+
+Section Curvature.
+Variable G : sgraph.
+
+(** The combinatorial curvature at [v]: [1 - deg v / 2 + sum of 1 / |f|], where [f] ranges over
+    the faces around [v]. *)
+Definition combinatorial_curvature (E : embedding G) (v : G) : rat :=
+  (1 - (#|darts_at v|)%:R / 2%:R + \sum_(d in darts_at v) 1 / (face_size E d)%:R)%R.
+
+(** The combinatorial curvature is positive at each vertex. *)
+Definition positive_curvature (E : embedding G) : Prop :=
+  forall v : G, (0 < combinatorial_curvature E v)%R.
+
+End Curvature.
 
 (** ** Definitions specific to the conjecture *)
 

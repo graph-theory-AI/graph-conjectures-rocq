@@ -1,4 +1,4 @@
-(** * Feedback arc sets of r-free digraphs with r > 2n/3
+(** * Feedback arc sets of (r-1)-free digraphs with r > 2n/3
 
 Fox, Himwich, Mani, "Extremal results on feedback arc sets in digraphs", 2022, arXiv:2204.01938,
 introduction (2204.01938__00).
@@ -7,12 +7,16 @@ A digraph is r-free if it contains no directed cycle of length at most r.  It is
 away from being acyclic if it has a feedback arc set (a set of arcs whose deletion leaves an acyclic
 digraph) of size at most 1.
 
-Conjecture: all r-free digraphs on n vertices with r > 2n/3 are at most one edge away from being
-acyclic.
+Conjecture: all (r-1)-free digraphs on n vertices with r > 2n/3 are at most one edge away from
+being acyclic.
+
+This is Conjecture 5.6 of the paper, as reported in the record.  The introduction states it for
+r-free digraphs, which is weaker.
 
 Encoding.  Digraphs are those of GraphTheory ([diGraph]: a finite type of vertices with a boolean
 relation [--]).  The assumptions exclude loops and digons, which are directed cycles of length 1 and
-2.  The condition r > 2n/3 is written 2n < 3r. *)
+2.  The condition r > 2n/3 is written 2n < 3r, and (r-1)-free is written: every directed cycle
+has length at least r. *)
 
 From GraphTheory Require Import digraph.
 From mathcomp Require Import boot.
@@ -47,4 +51,4 @@ Definition feedback_arc_number (D : diGraph) : nat :=
 
 Definition AX_r_free_digraphs_near_acyclic : Prop :=
   forall (r : nat) (D : diGraph),
-    2 * #|D| < 3 * r -> digirth_gt D r -> feedback_arc_number D <= 1.
+    2 * #|D| < 3 * r -> digirth_gt D r.-1 -> feedback_arc_number D <= 1.

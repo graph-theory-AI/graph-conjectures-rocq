@@ -3,7 +3,7 @@
 Arithmetic part of the disproof: the vertices of a cycle C of length n are the numbers smaller
 than n, called positions. *)
 
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

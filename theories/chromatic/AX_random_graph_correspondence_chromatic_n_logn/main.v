@@ -54,6 +54,8 @@ Definition edge_set_rel (V : finType) (E : {set {set V}}) : rel V :=
 Definition sgraph_of_edges (V : finType) (E : {set {set V}}) : sgraph :=
   sgraph_of_rel (edge_set_rel E).
 
+(** ** Definitions copied from GraphLib/random.v *)
+
 (** The probability that the edge set of the random graph [G(n,p)] on [0, ..., n-1] satisfies
     [P]. *)
 Definition gnp_probability (R : realFieldType) (p : R) (n : nat) (P : pred {set {set 'I_n}}) : R :=

@@ -1,4 +1,4 @@
-(** * Spectra, strongly regular graphs
+(** * Spectra, strongly regular graphs, Cayley graphs
 
     Matrices of simple graphs, spectra, and some strongly regular graphs.  The vertices of [G]
     are numbered by [enum_val]. *)
@@ -195,3 +195,10 @@ Definition higman_sims_rel (a b : nat) : bool :=
 
 (** The Higman-Sims graph, with parameters (100,22,0,6). *)
 Definition higman_sims_graph : sgraph := sgraph_of_rel (fun x y : 'I_100 => higman_sims_rel x y).
+
+(** ** Cayley graphs *)
+
+(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
+    without the neutral element). *)
+Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
+  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).

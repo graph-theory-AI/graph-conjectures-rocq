@@ -6,7 +6,7 @@ in graph-theory-rocq (digraph-theory/theories/applications/fractional_dichromati
 From GraphTheory Require Import digraph.
 From GC.GraphLib Require Import digraph.
 From GC.digraph.AX_fractional_dichromatic_number_complexity Require main.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -15,6 +15,7 @@ Unset Printing Implicit Defensive.
 Import Order.Theory GRing.Theory Num.Theory.
 
 Abbreviation two_layer := main.two_layer.
+Abbreviation fractional_dicolorable := main.fractional_dicolorable.
 
 (** The edges of R(D). *)
 Lemma two_layerE (D : diGraph) (u v : D) (i j : bool) :
@@ -155,8 +156,8 @@ Theorem frac_of_dicolorable (R : realFieldType) (D : diGraph) :
   dicolorable D 2 -> fractional_dicolorable (two_layer D) (2 : R).
 Proof.
 case/dicolorable2P => C [acC acC'].
-have acA : acyclic (induced (layers C)) by apply: acyclic_layers.
-have acB : acyclic (induced (layers (~: C))) by apply: acyclic_layers; rewrite ?setCK.
+have acA : main.acyclic (induced (layers C)) by apply: acyclic_layers.
+have acB : main.acyclic (induced (layers (~: C))) by apply: acyclic_layers; rewrite ?setCK.
 have sum1 (P : pred {set two_layer D}) A :
     \sum_(S | P S) (S == A)%:R = (P A)%:R :> R.
   have [PA|nPA] := boolP (P A).

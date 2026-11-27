@@ -1,10 +1,9 @@
 (** * Colourings
 
     Colourings of the vertices or of the edges of simple graphs ([sgraph]) and of multigraphs
-    ([mgraph]), list colourings and their variants, chi-boundedness, fractional and circular
-    colourings.  The chromatic number [χ(A)], the clique number [ω(A)] and the independence
-    number [α(A)] of a set [A] of vertices are those of GraphTheory ([coloring]); [A] is
-    [[set: G]] for the whole graph.
+    ([mgraph]), list colourings and their variants, chi-boundedness.  The chromatic number [χ(A)],
+    the clique number [ω(A)] and the independence number [α(A)] of a set [A] of vertices are those
+    of GraphTheory ([coloring]); [A] is [[set: G]] for the whole graph.
 
     A colouring of the edges of a simple graph is a map [col] on the sets of vertices:
     [col [set x; y]] is the colour of the edge [xy], and the other values are irrelevant. *)
@@ -12,15 +11,13 @@
 From GraphTheory Require Import mgraph.
 From GraphTheory Require Import preliminaries digraph sgraph dom coloring connectivity.
 From GraphTheory Require skeleton.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot.
 From GC.GraphLib Require Import misc hypergraph.
 From GC.GraphLib Require Import digraph(outdeg, balanced_digraph, digraph_of_arcs).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-Import Order.Theory GRing.Theory Num.Theory.
 
 (** ** Colourings of the vertices *)
 
@@ -317,65 +314,6 @@ Definition k_constricting (F : nat -> Prop) (k : nat) : Prop :=
 (** [F] is constricting. *)
 Definition constricting (F : nat -> Prop) : Prop := forall k : nat, k_constricting F k.
 
-(** ** Fractional colourings *)
-
-(** The fractional chromatic number of [G] is at most [p / q] ([0 < q] is meant): [G] has a
-    [b]-fold colouring with [a] colours (each vertex receives [b] colours, and adjacent vertices
-    receive disjoint sets) such that [a / b <= p / q]. *)
-Definition fractional_chromatic_le (G : sgraph) (p q : nat) : Prop :=
-  exists a b : nat, [/\ 0 < b, weighted_colorable (fun _ : G => b) a & a * q <= p * b].
-
-(** The fractional chromatic number of [G] is at least the integer [k]. *)
-Definition fractional_chromatic_ge (G : sgraph) (k : nat) : Prop :=
-  forall a b : nat, 0 < b -> weighted_colorable (fun _ : G => b) a -> k * b <= a.
-
-(** The fractional chromatic number of [G] is [r]. *)
-Definition fractional_chromatic_number (G : sgraph) (r : rat) : Prop :=
-  (exists a b : nat, (0 < b)%N /\
-     weighted_colorable (fun _ : G => b) a /\ r = (a%:Q / b%:Q)%R) /\
-  (forall a b : nat, (0 < b)%N ->
-     weighted_colorable (fun _ : G => b) a -> (r <= a%:Q / b%:Q)%R).
-
-(** The Hall ratio of [G] is at most [p / q]: so is the ratio of the number of vertices to the
-    independence number for all its subgraphs. *)
-Definition hall_ratio_le (G : sgraph) (p q : nat) : Prop :=
-  forall H : sgraph, subgraph H G -> q * #|H| <= p * α([set: H]).
-
-(** ** Circular colourings
-
-    They are defined for a relation [adj] on a type [V], possibly infinite. *)
-
-(** [c] is a circular [(p,q)]-colouring: its values are less than [p] and, for adjacent
-    vertices, they differ by at least [q] and at most [p - q]. *)
-Definition circular_coloring (V : Type) (adj : V -> V -> bool) (p q : nat) (c : V -> nat) : Prop :=
-  (forall v, (c v < p)%N) /\
-  (forall u v, adj u v ->
-     (q <= absz (Posz (c u) - Posz (c v))%R)%N /\
-     (absz (Posz (c u) - Posz (c v))%R <= p - q)%N).
-
-(** The circular chromatic number is [r]: the least [p / q] such that there is a circular
-    [(p,q)]-colouring (there is none if no two vertices are adjacent). *)
-Definition circular_chromatic_number (V : Type) (adj : V -> V -> bool) (r : rat) : Prop :=
-  (exists p q : nat, (0 < q)%N /\ (exists c, circular_coloring adj p q c) /\ r = (p%:Q / q%:Q)%R) /\
-  (forall p q : nat, (0 < q)%N -> (exists c, circular_coloring adj p q c) -> (r <= p%:Q / q%:Q)%R).
-
-(** [G] is circularly [t]-choosable: for all [p] and [q], it has a circular [(p,q)]-colouring
-    from all lists of size at least [t * q]. *)
-Definition circularly_choosable (G : sgraph) (t : rat) : Prop :=
-  forall p q : nat, (0 < q)%N ->
-    forall L : G -> {set 'I_p},
-      (forall v, (t * q%:Q <= (#|L v|)%:Q)%R) ->
-      exists c : G -> 'I_p,
-        circular_coloring (fun x y : G => x -- y) p q (fun v => (c v : nat)) /\
-        (forall v, c v \in L v).
-
-(** The circular choosability of [G] is [b]: the greatest lower bound of the [t >= 1] such that
-    [G] is circularly [t]-choosable. *)
-Definition circular_choosability (G : sgraph) (b : rat) : Prop :=
-  [/\ (1 <= b)%R,
-      (forall t : rat, (b < t)%R -> circularly_choosable G t)
-    & (forall t : rat, (1 <= t)%R -> circularly_choosable G t -> (b <= t)%R)].
-
 (** ** Colourings of the edges of simple graphs *)
 
 (** [col] is a proper edge colouring. *)
@@ -554,3 +492,137 @@ split=> [|[col]].
   have -> : preim_partition col [set: G] = fiber @: (col @: [set: G]) by rewrite -imset_comp.
   exact: leq_trans (leq_imset_card _ _) (max_card _).
 Qed.
+
+(** ** Clique number *)
+
+(** A triangle-free graph has clique number at most 2. *)
+Lemma triangle_free_omega (G : sgraph) : triangle_free G -> ω([set: G]) <= 2.
+Proof.
+move=> tf; case: omegaP => K /maxclique_clique cl; rewrite leqNgt.
+by apply/negP => /card_gt2P[x [y [z [[xK yK zK] [xy yz zx]]]]]; apply: (tf x y z); apply: cl.
+Qed.
+
+(** A graph with clique number at most 1 has no edge, hence its chromatic number is equal to its
+    clique number. *)
+Lemma chi_omega_le1 (G : sgraph) : ω([set: G]) <= 1 -> χ([set: G]) = ω([set: G]).
+Proof.
+move=> w1; apply/eqP; rewrite eqn_leq omega_leq_chi andbT; move: w1.
+rewrite leq_eqVlt ltnS leqn0 => /orP[/eqP w1|]; last by rewrite omega_eq0 => /eqP->; rewrite chi0.
+rewrite w1 (leq_trans (chiD1 _ (S := [set: G]) _)) ?setDv ?chi0 // stableEedge.
+apply/forall_inP => x _; apply/forall_inP => y _; apply/negP => xy.
+have := @clique_bound G [set x; y] [set: G]; rewrite inE subsetT w1 cards2 sg_edgeNeq //.
+by move/(_ (introT (cliqueP _) (clique2 xy))).
+Qed.
+
+(** A clique of size [k * m] contains the complete multipartite graph with [k] parts of size [m]
+    as a subgraph. *)
+Lemma clique_complete_multipartite (G : sgraph) k m :
+  k * m <= ω([set: G]) -> subgraph (complete_multipartite k m) G.
+Proof.
+case: omegaP => K /maxclique_clique cl kmK.
+have le : #|{: 'I_k * 'I_m}| <= #|K| by rewrite card_prod !card_ord.
+pose f x : G := @enum_val G (mem K) (widen_ord le (enum_rank x)).
+exists f => [x y /enum_val_inj /(congr1 val) /= /val_inj /enum_rank_inj //|x y _].
+by apply: cl; exact: enum_valP.
+Qed.
+
+(** A subgraph of [G] isomorphic to the complete multipartite graph with [k] parts of size 1 is a
+    clique of size [k]. *)
+Lemma complete_multipartite1_omega (G : sgraph) k :
+  subgraph (complete_multipartite k 1) G -> k <= ω([set: G]).
+Proof.
+case=> f finj fhom; have <- : #|f @: [set: complete_multipartite k 1]| = k.
+  by rewrite card_imset // cardsT card_prod !card_ord muln1.
+apply: clique_bound; rewrite inE subsetT.
+apply/cliqueP => _ _ /imsetP[a _ ->] /imsetP[b _ ->] ne; apply: fhom (ne).
+apply: contraNneq ne => e.
+by rewrite [a]surjective_pairing [b]surjective_pairing e (ord1 a.2) (ord1 b.2).
+Qed.
+
+(** ** Choosability *)
+
+(** Choosability is monotone in the size of the lists. *)
+Lemma choosable_leq (G : sgraph) k k' : k <= k' -> choosable G k -> choosable G k'.
+Proof. by move=> le chk C L LP; apply: chk => v; apply: leq_trans le (LP v). Qed.
+
+(** Every graph [G] is [#|G|]-choosable: lists of [#|G|] colours have an injective choice. *)
+Lemma choosable_card (G : sgraph) : choosable G #|G|.
+Proof.
+move=> C L LP.
+have Lne v : exists c, c \in L v.
+  by apply/set0Pn; rewrite -card_gt0 (leq_trans _ (LP v)) //; apply/card_gt0P; exists v.
+suff [f fL finj] : exists2 f : G -> C, forall v, f v \in L v & {in enum G &, injective f}.
+  exists f; split=> // x y; apply: contraTneq => /finj; rewrite !mem_enum => -> //.
+  by rewrite sg_irrefl.
+move: (enum G) (enum_uniq G); elim=> [|v s IH] /=.
+  by exists (fun v => xchoose (Lne v)) => // v; apply: xchooseP.
+case/andP=> vs /IH[f fL finj].
+have /subsetPn[c cL cf] : ~~ (L v \subset f @: [set x in s]).
+  apply: contraTN (LP v) => /subset_leq_card/leq_trans/(_ (leq_imset_card _ _)).
+  rewrite -ltnNge => /leq_ltn_trans; apply; rewrite -cardsT; apply: proper_card.
+  by rewrite properT; apply/eqP => /setP/(_ v); rewrite !inE (negbTE vs).
+exists (fun x => if x == v then c else f x) => [x|x y]; first by case: eqP => [->|].
+have sv z : z \in s -> (z == v) = false by move=> zs; apply: contraNF vs => /eqP <-.
+rewrite !inE => /orP[/eqP->|xs] /orP[/eqP->|ys]; rewrite ?eqxx ?sv // => E.
+- by case/imsetP: cf; exists y; rewrite ?inE.
+- by case/imsetP: cf; exists x; rewrite ?inE.
+- exact: finj.
+Qed.
+
+(** [G] has a choice number (in double negation form, which needs no excluded middle). *)
+Lemma choice_number_nn (G : sgraph) : ~ ~ exists m, choice_number G m.
+Proof.
+move=> no; suff : forall N, choosable G N -> False by apply; exact: choosable_card.
+elim=> [|N IH] chN; first by apply: no; exists 0.
+apply: no; exists N.+1; split=> // k chk; rewrite ltnNge; apply/negP => kN.
+exact: IH (choosable_leq kN chk).
+Qed.
+
+(** The edges of the colour class [p] are the edges whose colour satisfies [p]. *)
+Lemma edge_color_classE (G : sgraph) (C : eqType) (col : {set G} -> C) (p : pred C) (x y : G) :
+  (x : edge_color_class col p) -- y = (x -- y) && p (col [set x; y]).
+Proof. by rewrite /edge_rel /= /del_edge_set_rel /= inE negbK. Qed.
+
+(** A [k]-choosable graph is [k]-colourable (all lists equal to the [k] colours): the chromatic
+    number is at most the choice number. *)
+Lemma chi_le_choosable (G : sgraph) k : choosable G k -> χ([set: G]) <= k.
+Proof.
+move=> /(_ _ (fun=> [set: 'I_k])); rewrite cardsT card_ord => /(_ (fun=> leqnn k))[f [_ fP]].
+by apply/chi_leP; exists f; apply/proper_coloringP.
+Qed.
+
+(** ** The independence number and weighted colourings *)
+
+Section WeightedColoringAlpha.
+Variable G : sgraph.
+
+(** The [a] colour classes of a [b]-fold colouring are stable sets and cover every vertex [b]
+    times, hence [n b <= a α(G)]. *)
+Lemma weighted_colorable_alpha (a b : nat) :
+  weighted_colorable (fun _ : G => b) a -> #|G| * b <= a * α(G).
+Proof.
+case=> f [cf df].
+have stab (c : 'I_a) : stable [set v | c \in f v].
+  apply/stableP => x y; rewrite !inE => cx cy; apply/negP => xy.
+  by rewrite (disjointFr (df x y xy) cx) in cy.
+have -> : #|G| * b = \sum_(c < a) #|[set v | c \in f v]|.
+  transitivity (\sum_(v : G) #|f v|); first by under eq_bigr do rewrite cf; rewrite sum_nat_const.
+  under eq_bigr => v _ do rewrite -sum1_card big_mkcond.
+  rewrite exchange_big; apply: eq_bigr => c _.
+  by rewrite -sum1_card [RHS]big_mkcond; apply: eq_bigr => v _; rewrite inE.
+rewrite -alphaT -[X in _ <= X * _](card_ord a) -sum_nat_const.
+by apply: leq_sum => c _; apply/stabset_bound/stabsetsP.
+Qed.
+
+(** A proper colouring with [χ(G)] colours is a [1]-fold colouring. *)
+Lemma chi_weighted_colorable : weighted_colorable (fun _ : G => 1) χ([set: G]).
+Proof.
+have [col /proper_coloringP pc] := (chi_leP G _).1 (leqnn _).
+by exists (fun v => [set col v]); split => [v|x y xy]; rewrite ?cards1 // disjoints1 inE pc.
+Qed.
+
+(** [n <= χ(G) α(G)]. *)
+Lemma card_le_chi_alpha : #|G| <= χ([set: G]) * α(G).
+Proof. by rewrite -[#|G|]muln1; apply/weighted_colorable_alpha/chi_weighted_colorable. Qed.
+
+End WeightedColoringAlpha.

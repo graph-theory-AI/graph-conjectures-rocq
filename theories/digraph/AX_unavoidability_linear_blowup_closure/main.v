@@ -36,11 +36,6 @@ Unset Printing Implicit Defensive.
 Definition tournament (D : diGraph) : Prop :=
   irreflexive (@edge_rel D) /\ forall x y : D, (x != y) = (x -- y) (+) (y -- x).
 
-(** Maximum average degree: the maximum of 2|A(S)|/|S| over nonempty [S] (0 if [D] is empty). *)
-Definition digraph_mad (D : diGraph) : rat :=
-  (\big[Num.max/0]_(S in [set S : {set D} | S != set0])
-     ((2 * num_edges (induced S))%:Q / (#|S|)%:Q))%R.
-
 (** Blow-up: each vertex is replaced by [k] copies without arcs between them. *)
 Definition digraph_blowup (D : diGraph) (k : nat) : diGraph :=
   DiGraph (fun a b : D * 'I_k => a.1 -- b.1).
@@ -62,6 +57,13 @@ Definition unavoidability_number (D : diGraph) (N : nat) : Prop :=
 Definition linearly_unavoidable (C : diGraph -> Prop) : Prop :=
   exists c : nat, forall (D : diGraph) (N : nat),
     C D -> unavoidability_number D N -> (N <= c * #|D|)%N.
+
+(** ** Definitions copied from GraphLib/fractional.v *)
+
+(** Maximum average degree: the maximum of 2|A(S)|/|S| over nonempty [S] (0 if [D] is empty). *)
+Definition digraph_mad (D : diGraph) : rat :=
+  (\big[Num.max/0]_(S in [set S : {set D} | S != set0])
+     ((2 * num_edges (induced S))%:Q / (#|S|)%:Q))%R.
 
 (** ** Definitions specific to the conjecture *)
 

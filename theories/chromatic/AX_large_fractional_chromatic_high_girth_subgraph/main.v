@@ -46,6 +46,8 @@ Definition weighted_colorable (G : sgraph) (p : G -> nat) (k : nat) : Prop :=
     (forall v : G, #|f v| = p v) /\
     (forall x y : G, x -- y -> [disjoint f x & f y]).
 
+(** ** Definitions copied from GraphLib/fractional.v *)
+
 (** The fractional chromatic number of [G] is at least the integer [k]. *)
 Definition fractional_chromatic_ge (G : sgraph) (k : nat) : Prop :=
   forall a b : nat, 0 < b -> weighted_colorable (fun _ : G => b) a -> k * b <= a.

@@ -19,7 +19,7 @@ and |A| = 28.  It was formalized in graph-theory-rocq
 From GraphTheory Require Import preliminaries digraph sgraph dom.
 From GC.GraphLib Require Import misc.
 From GC.extremal.AX_bipartite_concatenation_psi_symmetry Require main.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum rat.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

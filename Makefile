@@ -1,6 +1,6 @@
 # make C=theories/topic/conj_name
 # compiles the files of a conjecture and those they require (everything without C);
-# proof.v is always recompiled when C is given, to print its messages
+# proof.v and implies_*.v are always recompiled when C is given, to print their messages
 
 # make clean C=theories/topic/conj_name
 # deletes the compiled files of a conjecture (all generated files without C)
@@ -11,35 +11,50 @@
 # (a proposition proxy_conj_name is treated in the same way)
 # (the generated files and the verdict are in _build/check/topic/conj_name)
 
+# make check C=theories/topic/A B=B
+# checks in the same way that implies_B.v proves A -> B (theorem A_implies_B)
+# (the generated files and the verdict are in _build/check/topic/A/implies_B)
+
 COMPARATOR ?= rocq-comparator
 
 DIR := $(patsubst %/,%,$(C))
 REL := $(patsubst theories/%,%,$(DIR))
 NAME := $(notdir $(DIR))
-STM = $(shell grep -qs '^Definition proxy_$(NAME)\>' $(DIR)/main.v && echo proxy_)$(NAME)
+proxy = $(shell grep -qs '^Definition proxy_$(notdir $(1))\>' $(1)/main.v && echo proxy_)$(notdir $(1))
+STM = $(call proxy,$(DIR))
 MOD := GC.$(subst /,.,$(REL))
-OUT := _build/check/$(REL)
+FILE := $(if $(B),implies_$(B),proof)
+OUT := _build/check/$(REL)$(if $(B),/$(FILE))
+# the conjecture B
+DIRB := $(if $(B),$(shell find theories -type d -name '$(B)'))
+STMB = $(call proxy,$(DIRB))
+MODB := GC.$(subst /,.,$(patsubst theories/%,%,$(DIRB)))
 
 .PHONY: build check clean
 build:
 	@test -z "$(C)" || test -d "$(DIR)" || { echo "no directory $(DIR)"; exit 2; }
 	@rocq makefile -f _CoqProject $$(find theories -name '*.v') -o Makefile.coq
-	@rm -f $(if $(C),$(DIR)/proof.vo)
+	@rm -f $(if $(C),$(DIR)/proof.vo $(DIR)/implies_*.vo)
 	@$(MAKE) --no-print-directory -f Makefile.coq \
 	  $(if $(C),$$(find $(DIR) -name '*.v' | sed 's/v$$/vo/'))
 
 check:
-	@test -n "$(C)" && test -f "$(DIR)/main.v" && test -f "$(DIR)/proof.v" || \
-	  { echo "usage: make check C=theories/topic/conj_name"; exit 2; }
+	@test -n "$(C)" && test -f "$(DIR)/main.v" && test -f "$(DIR)/$(FILE).v" || \
+	  { echo "usage: make check C=theories/topic/conj_name [B=other_conj_name]"; exit 2; }
+	@test -z "$(B)" || test -f "$(DIRB)/main.v" || { echo "no conjecture $(B)"; exit 2; }
 	@mkdir -p $(OUT)
 	@rm -f $(OUT)/verdict.json
-	@if grep -q '^Theorem $(STM)_fails\>' $(DIR)/proof.v; \
+	@requires='Require $(MOD).main.'; \
+	if test -n "$(B)"; \
+	then thm=$(STM)_implies_$(STMB); stm='$(MOD).main.$(STM) -> $(MODB).main.$(STMB)'; \
+	  requires="$$requires Require $(MODB).main."; \
+	elif grep -q '^Theorem $(STM)_fails\>' $(DIR)/proof.v; \
 	then thm=$(STM)_fails; stm='~ $(MOD).main.$(STM)'; \
 	else thm=$(STM)_holds; stm='$(MOD).main.$(STM)'; fi; \
-	printf 'Require %s.main.\nTheorem %s : %s.\nAdmitted.\n' \
-	  "$(MOD)" "$$thm" "$$stm" > $(OUT)/Challenge.v; \
-	printf 'Require %s.main.\nRequire %s.proof.\nTheorem %s : %s.\nProof. exact %s.proof.%s. Qed.\n' \
-	  "$(MOD)" "$(MOD)" "$$thm" "$$stm" "$(MOD)" "$$thm" > $(OUT)/Solution.v; \
+	printf '%s\nTheorem %s : %s.\nAdmitted.\n' \
+	  "$$requires" "$$thm" "$$stm" > $(OUT)/Challenge.v; \
+	printf '%s\nRequire %s.%s.\nTheorem %s : %s.\nProof. exact %s.%s.%s. Qed.\n' \
+	  "$$requires" "$(MOD)" "$(FILE)" "$$thm" "$$stm" "$(MOD)" "$(FILE)" "$$thm" > $(OUT)/Solution.v; \
 	printf '{ "theorem_names": ["%s"], "permit_challenge_axioms": false, "axiom_policy": "listed" }\n' \
 	  "$$thm" > $(OUT)/config.json; \
 	echo "checking $$thm : $$stm"

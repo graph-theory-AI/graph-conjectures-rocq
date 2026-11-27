@@ -45,17 +45,19 @@ Definition weighted_colorable (G : sgraph) (p : G -> nat) (k : nat) : Prop :=
     (forall v : G, #|f v| = p v) /\
     (forall x y : G, x -- y -> [disjoint f x & f y]).
 
-(** The fractional chromatic number of [G] is at most [p / q] ([0 < q] is meant): [G] has a
-    [b]-fold colouring with [a] colours (each vertex receives [b] colours, and adjacent vertices
-    receive disjoint sets) such that [a / b <= p / q]. *)
-Definition fractional_chromatic_le (G : sgraph) (p q : nat) : Prop :=
-  exists a b : nat, [/\ 0 < b, weighted_colorable (fun _ : G => b) a & a * q <= p * b].
-
 (** ** Definitions copied from GraphLib/topological.v *)
 
 (** [G] is planar: it has no minor [K_5] or [K_3,3]. *)
 Definition planar (G : sgraph) : Prop :=
   ~ minor G 'K_5 /\ ~ minor G (KB 3 3).
+
+(** ** Definitions copied from GraphLib/fractional.v *)
+
+(** The fractional chromatic number of [G] is at most [p / q] ([0 < q] is meant): [G] has a
+    [b]-fold colouring with [a] colours (each vertex receives [b] colours, and adjacent vertices
+    receive disjoint sets) such that [a / b <= p / q]. *)
+Definition fractional_chromatic_le (G : sgraph) (p q : nat) : Prop :=
+  exists a b : nat, [/\ 0 < b, weighted_colorable (fun _ : G => b) a & a * q <= p * b].
 
 (** ** Statement *)
 

@@ -38,7 +38,7 @@ Definition triangle_free (G : sgraph) : Prop :=
 Definition planar (G : sgraph) : Prop :=
   ~ minor G 'K_5 /\ ~ minor G (KB 3 3).
 
-(** ** Definitions copied from GraphLib/chromatic.v *)
+(** ** Definitions copied from GraphLib/fractional.v *)
 
 (** [c] is a circular [(p,q)]-colouring: its values are less than [p] and, for adjacent
     vertices, they differ by at least [q] and at most [p - q]. *)

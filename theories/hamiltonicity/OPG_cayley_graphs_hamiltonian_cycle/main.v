@@ -34,11 +34,6 @@ Proof. by move=> x; rewrite eqxx. Qed.
 Definition sgraph_of_rel (V : finType) (r : rel V) : sgraph :=
   SGraph (@sgraph_of_rel_sym V r) (@sgraph_of_rel_irrefl V r).
 
-(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
-    without the neutral element). *)
-Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
-  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).
-
 (** ** Definitions copied from GraphLib/hamiltonicity.v *)
 
 (** [c] is a Hamiltonian cycle of [G]. *)
@@ -49,6 +44,13 @@ Arguments hamiltonian_cycle : clear implicits.
 (** [G] is Hamiltonian. *)
 Definition hamiltonian (G : sgraph) : Prop :=
   exists c : seq G, hamiltonian_cycle G c.
+
+(** ** Definitions copied from GraphLib/spectral.v *)
+
+(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
+    without the neutral element). *)
+Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
+  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).
 
 (** ** Definitions specific to the conjecture *)
 

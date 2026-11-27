@@ -24,7 +24,7 @@ From GraphTheory Require Import digraph sgraph.
 From GC.GraphLib Require Import misc.
 From GC.misc.AX_long_odd_hole_heavy_path_lemma Require Import arcs.
 From GC.misc.AX_long_odd_hole_heavy_path_lemma Require main.
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

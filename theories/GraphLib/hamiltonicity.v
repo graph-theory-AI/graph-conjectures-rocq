@@ -61,3 +61,25 @@ Definition tsp_walk (G : sgraph) (w : seq G) : Prop :=
         path (--) x p,
         last x p = x
       & forall v : G, v \in w].
+
+(** ** Claw-free graphs *)
+
+(** Line graphs are claw-free: the three leaves of a claw would be pairwise disjoint edges, each
+    meeting the edge at the centre, which has only two ends. *)
+Lemma simple_line_graph_claw_free (G : sgraph) : claw_free (simple_line_graph G).
+Proof.
+move=> [h]; pose c := val (h (inl ord0)); pose l i := val (h (inr i)).
+have /fin_all_exists[v vP] (i : 'I_3) : exists x, x \in l i :&: c.
+  by apply/set0Pn; have := isubgraph_mono h (inr i) (inl ord0); case/andP.
+have /card_imset vinj : injective v.
+  move=> i j vij; apply/eqP/negPn/negP => ij.
+  have := isubgraph_mono h (inr i) (inr j); rewrite /edge_rel /= /kb_rel /= => /negbT.
+  rewrite negb_and negbK => /orP[/eqP/val_inj/(isubgraph_inj h)[/eqP]|].
+    by rewrite (negbTE ij).
+  case/set0Pn; exists (v i); move: (vP i) (vP j).
+  by rewrite -vij !inE => /andP[-> _] /andP[->].
+have : #|v @: [set: 'I_3]| <= #|c|.
+  by apply/subset_leq_card/subsetP => _ /imsetP[i _ ->]; move: (vP i); rewrite inE => /andP[].
+rewrite vinj cardsT card_ord /c; case/edgesP: (valP (h (inl ord0))) => x [y [-> _]].
+by rewrite cards2; case: (x != y).
+Qed.

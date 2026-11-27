@@ -12,6 +12,7 @@
 
 From GraphTheory Require Import digraph sgraph dom coloring.
 From mathcomp Require Import boot.
+From GC.GraphLib Require Import chromatic(chi_leP, proper_coloringP).
 From GC.chromatic.AX_large_chromatic_induced_path_uniquely_covered Require Import
   main(AX_large_chromatic_induced_path_uniquely_covered) borsuk_graph obstruction.
 
@@ -28,7 +29,8 @@ have comp : forall u v w : G, u -- v -> v -- w -> connect r u w || connect r w u
 have stab : forall x : G, stable [set y | connect r x y] := @step_stable t m l.
 case/(_ G G (fun x => [set y | connect r x y])) => [||//||p [sz_p [uniq_p path_p _]]].
 - exact: upset_triangle_free comp stab.
-- exact/ltnW/borsuk_chi.
+- apply/ltnW; rewrite ltnNge; apply/negP => /chi_leP[col /proper_coloringP].
+  exact: borsuk_coloring.
 - by move=> v; exists v; rewrite inE connect0.
 by apply: upset_not_uniquely_covered comp _ _ uniq_p path_p; rewrite sz_p.
 Qed.

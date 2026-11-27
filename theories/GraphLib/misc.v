@@ -8,7 +8,7 @@ allowed.  Walks, paths and cycles of simple graphs are sequences of vertices. *)
 From GraphTheory Require Import mgraph.
 From GraphTheory Require Import preliminaries digraph sgraph coloring connectivity.
 From GraphTheory Require dom skeleton.
-From mathcomp Require Import boot order algebra fingroup perm.
+From mathcomp Require Import boot.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -466,11 +466,6 @@ Definition petersen_graph : sgraph :=
 (** The diamond: [K_4] minus an edge. *)
 Definition diamond : sgraph := del_edges ([set ord0; ord_max] : {set 'K_4}).
 
-(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
-    without the neutral element). *)
-Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
-  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).
-
 (** ** Operations on graphs *)
 
 Section GraphJoin.
@@ -715,28 +710,6 @@ Inductive msubdivision (G K : mgraph) : Prop :=
 (** [G] and [H] are homeomorphic: they have a common subdivision. *)
 Definition mhomeomorphic (G H : mgraph) : Prop :=
   exists K : mgraph, msubdivision G K /\ msubdivision H K.
-
-(** ** Finite probability and random graphs *)
-
-(** [P n] holds with high probability: its probability tends to 1.  The probabilities of the
-    elements of the finite type [T n] are the integers [w n x], divided by their sum. *)
-Definition whp
-    (T : nat -> finType) (w : forall n : nat, T n -> nat)
-    (P : forall n : nat, pred (T n)) : Prop :=
-  forall a b : nat, 0 < a -> a <= b ->
-    eventually (fun n =>
-      0 < \sum_x w n x /\
-      b * (\sum_(x | P n x) w n x) >= (b - a) * (\sum_x w n x)).
-
-(** The probability that the edge set of the random graph [G(n,p)] on [0, ..., n-1] satisfies
-    [P]. *)
-Definition gnp_probability (R : realFieldType) (p : R) (n : nat) (P : pred {set {set 'I_n}}) : R :=
-  (\sum_(E : {set {set 'I_n}} | (E \subset E('K_n)) && P E)
-    p ^+ #|E| * (1 - p) ^+ (#|E('K_n)| - #|E|))%R.
-
-(** The edge set of the random graph [G(n,p)] satisfies [P n] with high probability. *)
-Definition gnp_whp (R : realFieldType) (p : R) (P : forall n : nat, pred {set {set 'I_n}}) : Prop :=
-  forall eps : R, (0 < eps)%R -> eventually (fun n => (1 - eps <= gnp_probability p (P n))%R).
 
 (** ** Polynomial-time algorithms
 

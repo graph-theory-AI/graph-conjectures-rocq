@@ -5,24 +5,30 @@
     distance at most [l] from the antipode of the other (the distance of two points is the
     maximum of the distances of their coordinates).
 
-    The chromatic number is larger than [t] if [m] and [l] are large enough ([borsuk_chi]): this
+    There is no colouring with [t] colours if [m] and [l] are large enough ([borsuk_coloring]): this
     is a discrete form of the theorem of Lyusternik and Shnirelman on the covers of the sphere,
     and it follows from Tucker's lemma.  The relation [step] satisfies the hypotheses of
     [obstruction.v] ([step_comparable], [step_stable]). *)
 
-From GraphTheory Require Import digraph sgraph dom coloring.
-From mathcomp Require Import boot ssrint zify.
-From GC.GraphLib Require Import tucker chromatic(chi_leP, proper_coloringP).
+From GraphTheory Require Import digraph sgraph dom.
+From mathcomp Require Import boot zify_ssreflect.
+From GC.GraphLib Require Import tucker.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(** The distance of two natural numbers. *)
+Local Abbreviation dist a b := ((a - b) + (b - a)).
+
+Lemma leqD_dist a b c : dist a c <= dist a b + dist b c.
+Proof. lia. Qed.
+
 (** Numbers at distance at most [k] are equal if they are equal modulo [k+1]. *)
-Lemma eq_mod_dist a b k : a = b %[mod k.+1] -> `|a - b| <= k -> a = b.
+Lemma eq_mod_dist a b k : a = b %[mod k.+1] -> dist a b <= k -> a = b.
 Proof.
 wlog le_ba : a b / b <= a => [hw eq_ab le_k|].
-  by case/orP: (leq_total b a) => [/hw->|/hw->] //; rewrite distnC.
+  by case/orP: (leq_total b a) => [/hw->|/hw->] //; rewrite addnC.
 move/eqP; rewrite eqn_mod_dvd // => dvd_ab.
 by have [|/dvdn_leq/(_ dvd_ab)] := posnP (a - b); lia.
 Qed.
@@ -37,24 +43,24 @@ Definition clip (m R a : nat) : nat := minn (maxn a (m - R)) (m + R).
     then comes a coordinate at least [m], and the last coordinates are [m]. *)
 Fixpoint coord (m R : nat) (x : seq nat) (j : nat) : nat :=
   if x is a :: x' then
-    if j is j'.+1 then coord m (R - `|clip m R a - m|) x' j' else clip m R a
+    if j is j'.+1 then coord m (R - dist (clip m R a) m) x' j' else clip m R a
   else if j is 0 then m + R else m.
 
 Section Coord.
 Variable m : nat.
 Implicit Types a d R : nat.
 
-Lemma clip_le R a : R <= m -> `|clip m R a - m| <= R.
+Lemma clip_le R a : R <= m -> dist (clip m R a) m <= R.
 Proof. by rewrite /clip; lia. Qed.
 
-Lemma clip_extreme R a : R <= m -> (a == 0) || (a == 2 * m) -> `|clip m R a - m| = R.
+Lemma clip_extreme R a : R <= m -> (a == 0) || (a == 2 * m) -> dist (clip m R a) m = R.
 Proof. by rewrite /clip; lia. Qed.
 
 Lemma clip_sub R a : R <= m -> a <= 2 * m -> clip m R (2 * m - a) = 2 * m - clip m R a.
 Proof. by rewrite /clip; lia. Qed.
 
 Lemma clip_close R R' a a' d :
-  `|R - R'| <= d -> `|a - a'| <= d -> `|clip m R a - clip m R' a'| <= d.
+  dist R R' <= d -> dist a a' <= d -> dist (clip m R a) (clip m R' a') <= d.
 Proof. by rewrite /clip; lia. Qed.
 
 Lemma coord0 x j : coord m 0 x j = m.
@@ -63,7 +69,7 @@ elim: x j => [|a x IH] [|j] //=; rewrite ?addn0 ?IH //.
 by rewrite /clip; lia.
 Qed.
 
-Lemma coord_le R x j : R <= m -> `|coord m R x j - m| <= R.
+Lemma coord_le R x j : R <= m -> dist (coord m R x j) m <= R.
 Proof.
 elim: x R j => [|a x IH] R [|j] /= le_Rm; rewrite ?clip_le //; try lia.
 apply: leq_trans (IH _ _ _) (leq_subr _ _); exact: leq_trans (leq_subr _ _) le_Rm.
@@ -87,7 +93,7 @@ elim: x R j => [|a x IH] R [|j] le_Rm /=.
 - by rewrite clip_extreme // subnn; case: j => [|j] _; lia.
 - by case/andP=> le_a _; rewrite clip_sub // subKn //; have := clip_le a le_Rm; lia.
 - case/andP=> le_a le_x; rewrite IH ?(leq_trans (leq_subr _ _)) //.
-  rewrite clip_sub // (_ : `|2 * m - _ - m| = `|clip m R a - m|) //.
+  rewrite clip_sub // (_ : dist (2 * m - _) m = dist (clip m R a) m) //.
   by have := clip_le a le_Rm; lia.
 Qed.
 
@@ -101,26 +107,26 @@ Qed.
 
 (** Close points of the cube have close images. *)
 Lemma coord_close R R' d x x' j :
-  0 < d -> `|R - R'| <= d -> close x x' ->
-  `|coord m R x j - coord m R' x' j| <= d * 2 ^ size x.
+  0 < d -> dist R R' <= d -> close x x' ->
+  dist (coord m R x j) (coord m R' x' j) <= d * 2 ^ size x.
 Proof.
 elim: x x' R R' d j => [|a x IH] [|a' x'] R R' d j //= d0 leRR'.
   by case: j => [|j] /=; lia.
 case/andP=> /andP[aa' a'a] cl.
-have cl_a : `|clip m R a - clip m R' a'| <= d by rewrite clip_close //; lia.
+have cl_a : dist (clip m R a) (clip m R' a') <= d by rewrite clip_close //; lia.
 case: j => [|j] /=; first by rewrite (leq_trans cl_a) // leq_pmulr ?expn_gt0.
 rewrite expnS mulnCA mulnA; apply: IH cl; first by rewrite muln_gt0.
 lia.
 Qed.
 
 (** A coordinate is far from [m]. *)
-Lemma coord_far R x : exists2 j, j <= size x & R <= 2 ^ size x * `|coord m R x j - m|.
+Lemma coord_far R x : exists2 j, j <= size x & R <= 2 ^ size x * dist (coord m R x j) m.
 Proof.
 elim: x R => [|a x IH] R /=; first by exists 0 => //; lia.
-have [small|large] := leqP R (2 * `|clip m R a - m|).
+have [small|large] := leqP R (2 * dist (clip m R a) m).
   exists 0 => //=; apply: leq_trans small _.
   by rewrite leq_mul2r expnS leq_pmulr ?expn_gt0 ?orbT.
-have [j lt_j le_j] := IH (R - `|clip m R a - m|); exists j.+1 => //=.
+have [j lt_j le_j] := IH (R - dist (clip m R a) m); exists j.+1 => //=.
 by rewrite expnS -mulnA; lia.
 Qed.
 
@@ -138,8 +144,8 @@ Definition vertex : finType := {ffun 'I_t.+1 -> 'I_(2 * m).+1}.
 Implicit Types u v w : vertex.
 
 Definition antipode v : vertex := [ffun j => rev_ord (v j)].
-Definition far v : bool := [exists j, far_dist < `|v j - m|].
-Definition near d u v : bool := [forall j, `|u j - v j| <= d].
+Definition far v : bool := [exists j, far_dist < dist (v j) m].
+Definition near d u v : bool := [forall j, dist (u j) (v j) <= d].
 
 Lemma antipodeE v (j : 'I_t.+1) : antipode v j = 2 * m - v j :> nat.
 Proof. by rewrite ffunE. Qed.
@@ -153,7 +159,7 @@ by apply: eq_existsb => j; rewrite antipodeE; have := ltn_ord (v j); lia.
 Qed.
 
 Lemma near_sym d u v : near d u v = near d v u.
-Proof. by apply: eq_forallb => j; rewrite distnC. Qed.
+Proof. by apply: eq_forallb => j; rewrite addnC. Qed.
 
 Lemma near_antipode d u v : near d (antipode u) (antipode v) = near d u v.
 Proof.
@@ -195,7 +201,7 @@ Lemma rank_lt v : rank v < (2 * l).+1 ^ t.+1.
 Proof. by apply: leq_trans (ltn_ord _) _; rewrite card_ffun !card_ord. Qed.
 
 Lemma connect_near u v (j : 'I_t.+1) :
-  connect step u v -> `|u j - v j| + 2 * l * rank u <= 2 * l * rank v.
+  connect step u v -> dist (u j) (v j) + 2 * l * rank u <= 2 * l * rank v.
 Proof.
 case/connectP=> p + ->; elim: p u => [|w p IH] u /=; first by lia.
 case/andP=> /andP[/forallP/(_ j) near_uw lt_uw] /IH.
@@ -251,9 +257,10 @@ Qed.
 
 (** The colours of a colouring give labels: if [pos v], then the label of [v] is the colour of [v]
     and its antipode has the complementary label. *)
-Lemma borsuk_chi : t < χ([set: borsuk_graph]).
+Lemma borsuk_coloring (col : borsuk_graph -> 'I_t) :
+  ~ forall u v : borsuk_graph, u -- v -> col u != col v.
 Proof.
-rewrite ltnNge; apply/negP => /chi_leP[col /proper_coloringP colP].
+move=> colP.
 pose pos v := enum_rank v < enum_rank (antipode v).
 pose lab x :=
   let v := vertex_of x in
@@ -263,7 +270,7 @@ have pos_antipode v : far v -> pos (antipode v) = ~~ pos v.
   move=> far_v; rewrite /pos antipodeK -leqNgt [RHS]leq_eqVlt.
   case: eqP => // eq_rank; have eq_v := enum_rank_inj (ord_inj eq_rank).
   have := far_not_near far_v; rewrite eq_v => /negP[].
-  by apply/forallP => j; rewrite distnn.
+  by apply/forallP => j; rewrite subnn.
 have lab_eq x y : (forall j, coord m m x j = coord m m y j) -> lab x = lab y.
   move=> eq_c; suff eq_xy : vertex_of x = vertex_of y by rewrite /lab eq_xy.
   by apply/ffunP => j; rewrite !ffunE eq_c.
@@ -281,7 +288,7 @@ move=> k x y le_k /(pt_le _ _ le_k) le_x /(pt_le _ _ le_k) le_y cl_xy.
 have near_xy : near l (vertex_of x) (vertex_of y).
   apply/forallP => j; rewrite !vertex_ofE; apply: leq_trans l_large.
   apply: (@leq_trans (1 * 2 ^ size x)); last by rewrite mul1n leq_pexp2l.
-  by apply: coord_close; rewrite // distnn.
+  by apply: coord_close; rewrite // subnn.
 have edge u v : far u -> far v -> near l u v -> col u != col (antipode v).
   move=> far_u far_v near_uv; apply: colP.
   by rewrite /edge_rel /= /borsuk_rel far_u far_antipode far_v antipodeK.

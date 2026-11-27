@@ -31,11 +31,6 @@ Unset Printing Implicit Defensive.
 Definition tournament (D : diGraph) : Prop :=
   irreflexive (@edge_rel D) /\ forall x y : D, (x != y) = (x -- y) (+) (y -- x).
 
-(** Maximum average degree: the maximum of 2|A(S)|/|S| over nonempty [S] (0 if [D] is empty). *)
-Definition digraph_mad (D : diGraph) : rat :=
-  (\big[Num.max/0]_(S in [set S : {set D} | S != set0])
-     ((2 * num_edges (induced S))%:Q / (#|S|)%:Q))%R.
-
 (** [D] contains a (not necessarily induced) copy of [H]. *)
 Definition subdigraph (H D : diGraph) : Prop :=
   exists f : H -> D, injective f /\ forall u v : H, u -- v -> f u -- f v.
@@ -47,6 +42,13 @@ Definition tournament_unavoidable (D : diGraph) (N : nat) : Prop :=
 (** [N] is the least number such that each tournament on [N] vertices contains [D]. *)
 Definition unavoidability_number (D : diGraph) (N : nat) : Prop :=
   tournament_unavoidable D N /\ (forall M : nat, M < N -> ~ tournament_unavoidable D M).
+
+(** ** Definitions copied from GraphLib/fractional.v *)
+
+(** Maximum average degree: the maximum of 2|A(S)|/|S| over nonempty [S] (0 if [D] is empty). *)
+Definition digraph_mad (D : diGraph) : rat :=
+  (\big[Num.max/0]_(S in [set S : {set D} | S != set0])
+     ((2 * num_edges (induced S))%:Q / (#|S|)%:Q))%R.
 
 (** ** Statement *)
 

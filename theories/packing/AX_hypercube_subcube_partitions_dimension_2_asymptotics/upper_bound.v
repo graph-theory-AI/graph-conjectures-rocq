@@ -5,7 +5,7 @@ Q_d.  As C(n,s) <= (4n/s)^s, this gives f_2(d) <= (4 C(d,2))^s <= (2 d^2)^s. *)
 
 From GraphTheory Require Import digraph sgraph.
 From GC.packing.AX_hypercube_subcube_partitions_dimension_2_asymptotics Require Import squares.
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

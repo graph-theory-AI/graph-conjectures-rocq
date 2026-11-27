@@ -24,7 +24,7 @@ are joined by an edge unless they are the same set with one vertex, which can be
 the sum of the weights. *)
 
 From GraphTheory Require Import preliminaries digraph sgraph coloring minor.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum ssrint rat.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -40,13 +40,6 @@ Definition weighted_colorable (G : sgraph) (p : G -> nat) (k : nat) : Prop :=
   exists f : G -> {set 'I_k},
     (forall v : G, #|f v| = p v) /\
     (forall x y : G, x -- y -> [disjoint f x & f y]).
-
-(** The fractional chromatic number of [G] is [r]. *)
-Definition fractional_chromatic_number (G : sgraph) (r : rat) : Prop :=
-  (exists a b : nat, (0 < b)%N /\
-     weighted_colorable (fun _ : G => b) a /\ r = (a%:Q / b%:Q)%R) /\
-  (forall a b : nat, (0 < b)%N ->
-     weighted_colorable (fun _ : G => b) a -> (r <= a%:Q / b%:Q)%R).
 
 (** ** Definitions copied from GraphLib/minor.v *)
 
@@ -70,6 +63,15 @@ Definition fractional_hadwiger_number (G : sgraph) (r : rat) : Prop :=
   (exists (n : nat) (B : 'I_n -> {set G}) (w : 'I_n -> rat), fractional_clique_minor B w r) /\
   (forall (n : nat) (B : 'I_n -> {set G}) (w : 'I_n -> rat) (r' : rat),
      fractional_clique_minor B w r' -> (r' <= r)%R).
+
+(** ** Definitions copied from GraphLib/fractional.v *)
+
+(** The fractional chromatic number of [G] is [r]. *)
+Definition fractional_chromatic_number (G : sgraph) (r : rat) : Prop :=
+  (exists a b : nat, (0 < b)%N /\
+     weighted_colorable (fun _ : G => b) a /\ r = (a%:Q / b%:Q)%R) /\
+  (forall a b : nat, (0 < b)%N ->
+     weighted_colorable (fun _ : G => b) a -> (r <= a%:Q / b%:Q)%R).
 
 (** ** Statement *)
 

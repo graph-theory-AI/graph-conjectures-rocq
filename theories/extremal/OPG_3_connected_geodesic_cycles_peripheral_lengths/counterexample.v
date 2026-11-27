@@ -25,7 +25,7 @@ From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require main
 From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require Import lightest.
 From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require Import
   triakis_tetrahedron.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum rat.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

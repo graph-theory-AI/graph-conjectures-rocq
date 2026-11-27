@@ -32,7 +32,7 @@ A sanity check is included in the form of `Check (conj_name_holds : full.path.to
 
 ### Relation proofs
 
-Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory of conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v`, with a theorem `Theorem A_implies_B : A -> B.` and similar checking possibilities. If $A$ is disproved, we omit such proofs.
+Each proof $A \Rightarrow B$ is contained in a file `A/implies_B.v`, where `A/` is the directory of conjecture $A$ and `B` is the canonical name of Conjecture $B$. It is similar to a `proof.v`, with a theorem `Theorem A_implies_B : A -> B.` and similar checking possibilities. If $A$ is disproved, we omit such proofs. It is checked with `make check C=theories/topic/A B=B`.
 
 ### Graph library
 
@@ -44,10 +44,10 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 11 proxies)
+- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 12 proxies)
 - [conjecture-proofs.md](progress/conjecture-proofs.md) (22 conjectures proved or disproved, including 1 proxy)
-- [relation-proofs.md](progress/relation-proofs.md) (0 relations proved)
-- [graph-library.md](progress/graph-library.md) (712 definitions and 225 statements)
+- [relation-proofs.md](progress/relation-proofs.md) (72 relations proved)
+- [graph-library.md](progress/graph-library.md) (718 definitions and 314 statements)
 - [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, disproved statements, choices and statuses to be checked; the column "user input" is for human decisions, signed with initials)
 
 

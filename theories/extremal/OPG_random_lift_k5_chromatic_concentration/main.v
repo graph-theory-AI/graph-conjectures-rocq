@@ -15,7 +15,11 @@ such that the probability that the chromatic number is k tends to 1.
 Encoding.  An h-lift of K_5 is given by a permutation of {0, ..., h-1} for each pair (u,v) of
 vertices of K_5; only those with u < v are used, and the unused permutations do not change the
 probabilities, as each lift is given by the same number of families of permutations.  The value k
-does not depend on h. *)
+does not depend on h.
+
+Proxy (weaker).  Another reading, as in the source, is one-point concentration with a value k(h)
+that may depend on h: the probability that the chromatic number of a random h-lift is k(h) tends
+to 1.  It is stated as [proxy_OPG_random_lift_k5_chromatic_concentration]. *)
 
 From GraphTheory Require Import preliminaries digraph sgraph coloring.
 From mathcomp Require Import boot fingroup perm.
@@ -42,6 +46,8 @@ Proof. by move=> x; rewrite eqxx. Qed.
 Definition sgraph_of_rel (V : finType) (r : rel V) : sgraph :=
   SGraph (@sgraph_of_rel_sym V r) (@sgraph_of_rel_irrefl V r).
 
+(** ** Definitions copied from GraphLib/random.v *)
+
 (** [P n] holds with high probability: its probability tends to 1.  The probabilities of the
     elements of the finite type [T n] are the integers [w n x], divided by their sum. *)
 Definition whp
@@ -67,3 +73,7 @@ Definition k5_lift (h : nat) (p : k5_lift_data h) : sgraph :=
 Definition OPG_random_lift_k5_chromatic_concentration : Prop :=
   exists k : nat,
     whp (fun (h : nat) (_ : k5_lift_data h) => 1) (fun h p => χ([set: k5_lift p]) == k).
+
+Definition proxy_OPG_random_lift_k5_chromatic_concentration : Prop :=
+  exists k : nat -> nat,
+    whp (fun (h : nat) (_ : k5_lift_data h) => 1) (fun h p => χ([set: k5_lift p]) == k h).

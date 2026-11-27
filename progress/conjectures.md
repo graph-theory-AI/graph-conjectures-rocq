@@ -20,7 +20,7 @@
 | [AX_controlled_triangle_free_chromatic_4_hole](../theories/chromatic/AX_controlled_triangle_free_chromatic_4_hole/main.v) | question: positive answer stated |
 | [AX_cubic_2_homogeneous_coloring_4_colors](../theories/chromatic/AX_cubic_2_homogeneous_coloring_4_colors/main.v) |  |
 | [AX_cubic_2_homogeneous_coloring_finite_exceptions](../theories/chromatic/AX_cubic_2_homogeneous_coloring_finite_exceptions/main.v) |  |
-| [AX_cubic_truncation_strong_6_edge_coloring](../theories/chromatic/AX_cubic_truncation_strong_6_edge_coloring/main.v) | question: positive answer stated, for truncations of simple cubic graphs (false for some cubic multigraphs) |
+| [AX_cubic_truncation_strong_6_edge_coloring](../theories/chromatic/AX_cubic_truncation_strong_6_edge_coloring/main.v) | question: positive answer stated, for truncations of simple cubic graphs (false for some cubic multigraphs); also a proxy, the first formulation (diamond-free claw-free cubic graphs), false |
 | [AX_cycles_union_k4_copies_4_colorable](../theories/chromatic/AX_cycles_union_k4_copies_4_colorable/main.v) | question: positive answer stated |
 | [AX_degenerate_graphs_flexibility_d_plus_1_lists](../theories/chromatic/AX_degenerate_graphs_flexibility_d_plus_1_lists/main.v) | question: positive answer stated (weighted version) |
 | [AX_degenerate_graphs_polynomial_kempe_sequences](../theories/chromatic/AX_degenerate_graphs_polynomial_kempe_sequences/main.v) | question: positive answer stated; the polynomial may depend on k |
@@ -169,7 +169,7 @@
 | [AX_digraph_subdivision_maderian_disjoint_union](../theories/digraph/AX_digraph_subdivision_maderian_disjoint_union/main.v) |  |
 | [AX_digraph_subdivision_oriented_trees_chromatic_2k](../theories/digraph/AX_digraph_subdivision_oriented_trees_chromatic_2k/main.v) |  |
 | [AX_digraph_subdivision_oriented_trees_min_outdegree](../theories/digraph/AX_digraph_subdivision_oriented_trees_min_outdegree/main.v) |  |
-| [AX_digraph_subdivision_strong_connectivity_maderian](../theories/digraph/AX_digraph_subdivision_strong_connectivity_maderian/main.v) | two questions: positive answer to both stated |
+| [AX_digraph_subdivision_strong_connectivity_maderian](../theories/digraph/AX_digraph_subdivision_strong_connectivity_maderian/main.v) | proxy (weaker): two questions; positive answer to the first (κ) only, the second (κ') has a negative answer |
 | [AX_directed_kneser_graphs_existence](../theories/digraph/AX_directed_kneser_graphs_existence/main.v) | question: positive answer stated, for all k >= b >= 1 |
 | [AX_fractional_dichromatic_number_complexity](../theories/digraph/AX_fractional_dichromatic_number_complexity/main.v) | proxy (stronger, given known facts): reduction only, complexity classes are not formalized |
 | [AX_gyarfas_sumner_oriented_iff_forest](../theories/digraph/AX_gyarfas_sumner_oriented_iff_forest/main.v) | about undirected graphs |
@@ -192,7 +192,7 @@
 | [AX_oriented_triangle_free_acyclic_number_sqrt](../theories/digraph/AX_oriented_triangle_free_acyclic_number_sqrt/main.v) |  |
 | [AX_oriented_triangle_free_dichromatic_number_max](../theories/digraph/AX_oriented_triangle_free_dichromatic_number_max/main.v) |  |
 | [AX_outdegree_transitive_tournament_subdivision_semidegree](../theories/digraph/AX_outdegree_transitive_tournament_subdivision_semidegree/main.v) |  |
-| [AX_r_free_digraphs_near_acyclic](../theories/digraph/AX_r_free_digraphs_near_acyclic/main.v) | form of the introduction; Conjecture 5.6 of the paper is stronger: (r-1)-free instead of r-free |
+| [AX_r_free_digraphs_near_acyclic](../theories/digraph/AX_r_free_digraphs_near_acyclic/main.v) | Conjecture 5.6 of the paper ((r-1)-free); the introduction states it for r-free digraphs (weaker) |
 | [AX_split_digraph_strong_2_kernel_half](../theories/digraph/AX_split_digraph_strong_2_kernel_half/main.v) | question: positive answer stated |
 | [AX_tournament_clique_number_bounded_witness](../theories/digraph/AX_tournament_clique_number_bounded_witness/main.v) | question: positive answer stated |
 | [AX_tournament_clique_number_bst_ordering](../theories/digraph/AX_tournament_clique_number_bst_ordering/main.v) |  |
@@ -317,7 +317,7 @@
 | [OPG_perfect_matching_inherited_colorings_cancellation](../theories/extremal/OPG_perfect_matching_inherited_colorings_cancellation/main.v) | problem (for which n and d): the answer conjectured by Krenn and Gu is stated |
 | [OPG_planar_circular_choosability_upper_bound](../theories/extremal/OPG_planar_circular_choosability_upper_bound/main.v) | proxy (weaker): the least upper bound is a rational number between 6 and 8, instead of a determination of its value |
 | [OPG_random_half_subgraph_chromatic_lower_bound](../theories/extremal/OPG_random_half_subgraph_chromatic_lower_bound/main.v) | question: positive answer stated |
-| [OPG_random_lift_k5_chromatic_concentration](../theories/extremal/OPG_random_lift_k5_chromatic_concentration/main.v) | question: positive answer stated, for a value that does not depend on h |
+| [OPG_random_lift_k5_chromatic_concentration](../theories/extremal/OPG_random_lift_k5_chromatic_concentration/main.v) | question: positive answer stated, for a value that does not depend on h; also a proxy (weaker), for a value depending on h |
 | [OPG_random_stable_roommates_solution_probability](../theories/extremal/OPG_random_stable_roommates_solution_probability/main.v) |  |
 | [OPG_regular_nearly_spanning_k_regular_subgraph](../theories/extremal/OPG_regular_nearly_spanning_k_regular_subgraph/main.v) |  |
 | [OPG_shannon_capacity_c7](../theories/extremal/OPG_shannon_capacity_c7/main.v) | proxy (incomparable): states that the Shannon capacity of C_7 is an algebraic number, instead of its value (no value is suggested) |

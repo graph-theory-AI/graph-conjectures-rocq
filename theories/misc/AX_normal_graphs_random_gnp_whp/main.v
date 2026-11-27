@@ -51,16 +51,6 @@ Definition edge_set_rel (V : finType) (E : {set {set V}}) : rel V :=
 Definition sgraph_of_edges (V : finType) (E : {set {set V}}) : sgraph :=
   sgraph_of_rel (edge_set_rel E).
 
-(** The probability that the edge set of the random graph [G(n,p)] on [0, ..., n-1] satisfies
-    [P]. *)
-Definition gnp_probability (R : realFieldType) (p : R) (n : nat) (P : pred {set {set 'I_n}}) : R :=
-  (\sum_(E : {set {set 'I_n}} | (E \subset E('K_n)) && P E)
-    p ^+ #|E| * (1 - p) ^+ (#|E('K_n)| - #|E|))%R.
-
-(** The edge set of the random graph [G(n,p)] satisfies [P n] with high probability. *)
-Definition gnp_whp (R : realFieldType) (p : R) (P : forall n : nat, pred {set {set 'I_n}}) : Prop :=
-  forall eps : R, (0 < eps)%R -> eventually (fun n => (1 - eps <= gnp_probability p (P n))%R).
-
 (** [G] is normal (Koerner): it has a set [K] of cliques and a set [A] of stable sets, both
     covering the vertices, such that each clique of [K] meets each stable set of [A]. *)
 Definition normal_graph (G : sgraph) : bool :=
@@ -71,6 +61,18 @@ Definition normal_graph (G : sgraph) : bool :=
       [forall v : G, [exists C in K, v \in C]] &&
       [forall v : G, [exists S in A, v \in S]] &&
       [forall C in K, [forall S in A, C :&: S != set0]]]].
+
+(** ** Definitions copied from GraphLib/random.v *)
+
+(** The probability that the edge set of the random graph [G(n,p)] on [0, ..., n-1] satisfies
+    [P]. *)
+Definition gnp_probability (R : realFieldType) (p : R) (n : nat) (P : pred {set {set 'I_n}}) : R :=
+  (\sum_(E : {set {set 'I_n}} | (E \subset E('K_n)) && P E)
+    p ^+ #|E| * (1 - p) ^+ (#|E('K_n)| - #|E|))%R.
+
+(** The edge set of the random graph [G(n,p)] satisfies [P n] with high probability. *)
+Definition gnp_whp (R : realFieldType) (p : R) (P : forall n : nat, pred {set {set 'I_n}}) : Prop :=
+  forall eps : R, (0 < eps)%R -> eventually (fun n => (1 - eps <= gnp_probability p (P n))%R).
 
 (** ** Statement *)
 

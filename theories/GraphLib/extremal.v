@@ -266,3 +266,91 @@ Definition incidence_order (T : finType) (E : {set {set T}}) : rel (T + {set T})
     | inr e, inr f => e == f
     | inr _, inl _ => false
     end.
+
+(** ** VC-dimension of induced subgraphs *)
+
+(** An induced embedding maps shattered sets to shattered sets. *)
+Lemma shattered_isubgraph (F G : sgraph) (i : F ⇀ G) (S : {set F}) :
+  shattered S -> shattered (i @: S).
+Proof.
+move=> shS T /subsetP TS; have [v vS] : exists v, N(v) :&: S = [set x in S | i x \in T].
+  by apply: shS; rewrite setIdE subsetIl.
+exists (i v); apply/setP => y; rewrite !inE; apply/idP/idP => [/andP[vy /imsetP[u uS yu]]|yT].
+  have : u \in N(v) :&: S by rewrite !inE -(isubgraph_mono i) -yu vy uS.
+  by rewrite vS inE -yu => /andP[].
+have [u uS yu] := imsetP (TS y yT); rewrite yu imset_f // andbT isubgraph_mono.
+have : u \in [set x in S | i x \in T] by rewrite inE uS -yu.
+by rewrite -vS !inE => /andP[].
+Qed.
+
+(** The VC-dimension of an induced subgraph is at most that of the graph. *)
+Lemma vc_dim_le_isubgraph (F G : sgraph) (i : F ⇀ G) (d : nat) :
+  vc_dim_le G d -> vc_dim_le F d.
+Proof.
+by move=> vcG S /(shattered_isubgraph (i := i))/vcG; rewrite card_imset //; apply: isubgraph_inj.
+Qed.
+
+(** ** Edge counts *)
+
+Section TreeEdges.
+Variable T : sgraph.
+Hypothesis treeT : is_tree [set: T].
+
+(** A tree with [n] vertices has [n - 1] edges: rooting it at [r], each vertex [z] other than [r]
+    is joined by an edge to a unique parent, the vertex before [z] on the path from [r] to [z]. *)
+Lemma tree_card_edges (r : T) : #|E(T)|.+1 = #|T|.
+Proof.
+have pathT x : exists p : Path r x, irred p.
+  by apply/connect_irredP; exact: connectedTE treeT.2 r x.
+pose R := [set p : T * T | p.1 -- p.2 && connect (restrict (predC1 p.2) (--)) r p.1].
+have pathR u z : (u, z) \in R -> exists2 q : Path r u, irred q & z \notin q.
+  rewrite inE /= => /andP[uz]; case: (eqVneq r u) uz => [<- rz _|ru uz].
+    by exists (idp r); rewrite ?irred_idp // mem_idp eq_sym sg_edgeNeq.
+  case/connect_irredRP => // q Iq /subsetP qz; exists q => //.
+  by apply/negP => /qz; rewrite inE eqxx.
+have pathRz u z (uz : u -- z) : (u, z) \in R ->
+    exists q : Path r u, [/\ irred (pcat q (edgep uz)), z \notin q & u \in q].
+  by case/pathR => q Iq zq; exists q; rewrite irred_edgeR zq Iq path_end.
+have uniqR u u' z : (u, z) \in R -> (u', z) \in R -> u = u'.
+  move=> uzR u'zR; move: (uzR) (u'zR); rewrite !inE /= => /andP[uz _] /andP[u'z _].
+  case/(pathRz _ _ uz): uzR => q [Iq _ _]; case/(pathRz _ _ u'z): u'zR => q' [Iq' _ _].
+  have /(congr1 val) /= := forestT_unique treeT.1 Iq Iq'; rewrite !cats1 => /rcons_inj[].
+  by move=> /(congr1 (last r)); rewrite !path_last.
+have ER : E(T) = [set [set p.1; p.2] | p in R].
+  apply/setP => e; apply/edgesP/imsetP => [[x [y [-> xy]]]|[[u z] + ->]]; last first.
+    by rewrite inE /= => /andP[uz _]; exists u, z.
+  have [p Ip] := pathT x; have [yp|yp] := boolP (y \in p); last first.
+    exists (x, y) => //; rewrite inE /= xy; apply: (connectRI p) => v vp; rewrite inE.
+    by apply: contraNneq yp => <-.
+  case/(isplitP Ip): yp => p1 p2 _ _ p12; exists (y, x); last by rewrite /= setUC.
+  rewrite inE /= sg_sym xy; apply: (connectRI p1) => v vp; rewrite inE.
+  apply: contraTneq vp => ->; apply/negP => /p12 /(_ (path_end p2)) xy'.
+  by rewrite xy' sg_irrefl in xy.
+rewrite -cardsT (cardsD1 r) inE add1n ER card_in_imset; last first.
+  rewrite -(card_in_imset (f := snd)) => [[u z] [u' z'] uzR u'z'R /= zz'|].
+    by move: uzR; rewrite zz' => /uniqR /(_ u'z'R) ->.
+  congr _.+1; apply/eq_card => z; rewrite !inE andbT eq_sym.
+  apply/imsetP/idP => [[[u z'] + ->]|zr].
+    rewrite inE /= => /andP[uz /connect_restrict_case[ru|[_ + _ _]]].
+      by rewrite ru sg_edgeNeq.
+    by rewrite inE.
+  have [p Ip] := pathT z; have [u [p' [uz Ep]]] := splitR p (zr : r != z); exists (u, z) => //.
+  rewrite inE /= uz; apply: (connectRI p') => v vp; rewrite inE.
+  by move: Ip; rewrite Ep irred_edgeR => /andP[+ _]; apply: contraNneq => <-.
+move=> [u z] [z' u'] uzR zuR /= /doubleton_eq_iff[[-> ->] //|[eu ez]].
+rewrite -{}eu -{}ez in zuR *.
+have uz : u -- z by move: uzR; rewrite inE => /andP[].
+have [q [Iq _ uq]] := pathRz _ _ uz uzR; have [q' Iq' uq'] := pathR _ _ zuR.
+by move: uq'; rewrite -(forestT_unique treeT.1 Iq Iq') mem_pcat uq.
+Qed.
+
+End TreeEdges.
+
+(** The edges of a colour class are the edges whose colour satisfies [p]. *)
+Lemma edge_color_class_edges (G : sgraph) (C : eqType) (col : {set G} -> C) (p : pred C) :
+  E(edge_color_class col p) = [set e in E(G) | p (col e)].
+Proof.
+apply/setP => e; rewrite inE; apply/edgesP/andP => [[x [y [-> xy]]]|[/edgesP[x [y [-> xy]]] pe]].
+  by move: xy; rewrite edge_color_classE => /andP[xy ->]; rewrite (@in_edges G).
+by exists x, y; rewrite edge_color_classE xy.
+Qed.

@@ -6,14 +6,15 @@ peripheral. *)
 
 From GraphTheory Require Import preliminaries digraph sgraph connectivity.
 From GC.GraphLib Require Import misc.
-From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require main.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Abbreviation peripheral_cycle := main.peripheral_cycle.
+(** The definition of main.v, with the notions of GraphLib. *)
+Definition peripheral_cycle (G : sgraph) (c : seq G) : Prop :=
+  chordless_cycle c /\ connected (~: [set x in c]).
 
 (** The vertices are the [b i = (false, i)], which form the K4, and the [s i = (true, i)], where
     [s i] is adjacent to the [b j] with [j != i]. *)

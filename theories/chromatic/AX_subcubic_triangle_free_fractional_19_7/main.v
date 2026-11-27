@@ -54,6 +54,8 @@ Definition weighted_colorable (G : sgraph) (p : G -> nat) (k : nat) : Prop :=
     (forall v : G, #|f v| = p v) /\
     (forall x y : G, x -- y -> [disjoint f x & f y]).
 
+(** ** Definitions copied from GraphLib/fractional.v *)
+
 (** The fractional chromatic number of [G] is at most [p / q] ([0 < q] is meant): [G] has a
     [b]-fold colouring with [a] colours (each vertex receives [b] colours, and adjacent vertices
     receive disjoint sets) such that [a / b <= p / q]. *)

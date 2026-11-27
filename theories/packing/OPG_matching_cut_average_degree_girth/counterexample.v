@@ -14,7 +14,7 @@ cut is NP-complete for these girths and degrees.  The proof given here is differ
 From GraphTheory Require Import digraph sgraph.
 From GC.packing.OPG_matching_cut_average_degree_girth Require main.
 From GC.packing.OPG_matching_cut_average_degree_girth Require Import greedy initial_potential.
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

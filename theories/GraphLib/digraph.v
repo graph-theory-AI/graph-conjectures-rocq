@@ -13,14 +13,12 @@ GraphTheory: [N(v)] (out-neighbourhood), [num_edges D], [induced A] (induced sub
 
 (* [digraph] comes last: [induced] and [induced_rel] are those of digraphs, not of sgraphs *)
 From GraphTheory Require Import sgraph coloring digraph.
-From mathcomp Require Import boot order perm algebra.
+From mathcomp Require Import boot perm.
 From GC.GraphLib Require Import misc homomorphism.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-Import Order.Theory GRing.Theory Num.Theory.
 
 (** * Definitions *)
 
@@ -103,11 +101,6 @@ Definition digraph_of_arcs (T : finType) (A : {set T * T}) : diGraph :=
 (** The arcs from [B] to its complement. *)
 Definition outcut (D : diGraph) (B : {set D}) : {set D * D} :=
   [set p : D * D | [&& p.1 \in B, p.2 \notin B & p.1 -- p.2]].
-
-(** Maximum average degree: the maximum of 2|A(S)|/|S| over nonempty [S] (0 if [D] is empty). *)
-Definition digraph_mad (D : diGraph) : rat :=
-  (\big[Num.max/0]_(S in [set S : {set D} | S != set0])
-     ((2 * num_edges (induced S))%:Q / (#|S|)%:Q))%R.
 
 (** ** Operations *)
 
@@ -279,15 +272,6 @@ Definition acyclic (D : diGraph) : bool :=
     colours so that each colour class induces an acyclic digraph. *)
 Definition dicolorable (D : diGraph) (k : nat) : Prop :=
   exists col : D -> 'I_k, forall i : 'I_k, acyclic (induced [set v | col v == i]).
-
-(** The fractional dichromatic number of [D] is at most [p]: nonnegative weights on the
-    sets inducing an acyclic digraph, of total at most [p], cover each vertex with weight
-    at least 1.  Weights are taken in an ordered field [R]. *)
-Definition fractional_dicolorable (R : realFieldType) (D : diGraph) (p : R) : Prop :=
-  (exists x : {set D} -> R,
-    [/\ forall A : {set D}, 0 <= x A,
-        forall v : D, 1 <= \sum_(A : {set D} | acyclic (induced A) && (v \in A)) x A
-      & \sum_(A : {set D} | acyclic (induced A)) x A <= p])%R.
 
 (** [F] is the arc set of a spanning out-branching rooted at [r]. *)
 Definition out_branching (D : diGraph) (F : {set D * D}) (r : D) : bool :=
@@ -624,3 +608,173 @@ Qed.
 Lemma num_edges_digraph_of_arcs (T : finType) (A : {set T * T}) :
   num_edges (digraph_of_arcs A) = #|A|.
 Proof. by apply: eq_card => -[]. Qed.
+
+(** ** Subdigraphs and unavoidability *)
+
+(** [subdigraph] is transitive. *)
+Lemma subdigraph_trans (F H D : diGraph) : subdigraph F H -> subdigraph H D -> subdigraph F D.
+Proof.
+move=> [f [f_inj f_arc]] [g [g_inj g_arc]]; exists (g \o f); split; first exact: inj_comp.
+by move=> u v uv; apply/g_arc/f_arc.
+Qed.
+
+(** An induced subdigraph is a subdigraph. *)
+Lemma subdigraph_induced (D : diGraph) (S : {set D}) : subdigraph (induced S) D.
+Proof. by exists val; split=> //; exact: val_inj. Qed.
+
+(** A digraph is a subdigraph of the digraphs isomorphic to it. *)
+Lemma subdigraph_diso (H D : diGraph) : H ≃ D -> subdigraph H D.
+Proof.
+move=> i; exists (bij.bij_fwd i); split=> [|u v]; first exact: bij.bij_injective.
+by rewrite edge_diso.
+Qed.
+
+(** A subdigraph of an [N]-unavoidable digraph is [N]-unavoidable. *)
+Lemma tournament_unavoidable_sub (H D : diGraph) (N : nat) :
+  subdigraph H D -> tournament_unavoidable D N -> tournament_unavoidable H N.
+Proof. by move=> HD uD T tT cT; exact: subdigraph_trans HD (uD T tT cT). Qed.
+
+(** The unavoidability number is at most each unavoidable order. *)
+Lemma unavoidability_number_le (D : diGraph) (N M : nat) :
+  unavoidability_number D N -> tournament_unavoidable D M -> N <= M.
+Proof. by move=> [_ minN] uM; rewrite leqNgt; apply/negP => /minN. Qed.
+
+(** An [N]-unavoidable digraph has an unavoidability number.  Unavoidability is not decided
+    here, so the number is only shown not to be absent: it can be assumed in the proof of a
+    boolean statement. *)
+Lemma unavoidability_number_elim (D : diGraph) (N : nat) (b : bool) :
+  tournament_unavoidable D N -> (forall M, unavoidability_number D M -> b) -> b.
+Proof.
+case: b => // uN nb; exfalso; elim/ltn_ind: N uN => N IH uN.
+by have := nb N (conj uN IH).
+Qed.
+
+(** A copy of a loopless digraph [F] is a subdivision of [F] whose paths have length one. *)
+Lemma subdigraph_disubdivision (F D : diGraph) :
+  irreflexive (@edge_rel F) -> subdigraph F D -> contains_disubdivision F D.
+Proof.
+move=> irr [f [f_inj f_arc]]; exists f; split=> //; exists (fun _ v => [:: f v]).
+have int0 u v : seq_interior (f u) (f v) [:: f u; f v] = set0.
+  by apply/setP => x; rewrite !inE; case: eqP; case: eqP.
+split=> [u v uv|u v x y _ _ _]; rewrite !int0 -!setI_eq0 !set0I ?eqxx //; split=> //.
+rewrite /upath /pathp /= f_arc // !inE (inj_eq f_inj) eqxx !andbT.
+by apply: contraTneq uv => ->; rewrite irr.
+Qed.
+
+(** ** Acyclic digraphs and subdivisions *)
+
+(** An oriented digraph whose underlying graph is a forest is acyclic. *)
+Lemma oriented_forest_acyclic (D : diGraph) :
+  oriented D -> is_forest [set: underlying D] -> acyclic D.
+Proof.
+move=> or forest; apply/forallP => u; apply/forallP => v; apply/implyP => uv.
+apply/negP => /upathP[p /and3P[uq pth /eqP lst]]; subst u.
+have sub : subrel (@edge_rel D) (@edge_rel (underlying D)).
+  move=> x y xy; rewrite /edge_rel /= xy andbT; apply: contraTneq xy => ->.
+  by apply/negP => yy; have := or y y yy; rewrite yy.
+have upth : path (@edge_rel (underlying D)) v p := sub_path sub pth.
+have irr : irred (Path_of_path upth) by rewrite irredE nodesE.
+have vu : @edge_rel (underlying D) v (last v p) by rewrite sg_sym; apply: sub.
+have /(congr1 val) /= pE := forestT_unique forest irr (sgraph.irred_edge vu).
+by move: pth uv; rewrite pE /= andbT => /or /negP.
+Qed.
+
+(** An acyclic digraph is a subdigraph of the transitive tournament on its vertices (it has a
+    topological order). *)
+Lemma acyclic_subdigraph_transitive_tournament (D : diGraph) :
+  acyclic D -> subdigraph D (transitive_tournament #|D|).
+Proof.
+move=> /acyclic_rankP[phi inc]; pose f v := phi v * #|D| + enum_rank v.
+have f_inj : injective f.
+  move=> u v /(congr1 (modn^~ #|D|)); rewrite !modnMDl !modn_small //.
+  by move/val_inj/enum_rank_inj.
+have [p pE] := perm_lt_ex f_inj.
+exists (fun v => enum_rank (p v)); split=> [u v /enum_rank_inj/perm_inj //|u v uv].
+rewrite [_ -- _]pE /f; apply: (@leq_trans ((phi u).+1 * #|D|)).
+  by rewrite mulSnr ltn_add2l.
+by apply: leq_trans (leq_addr _ _); rewrite leq_mul2r inc ?orbT.
+Qed.
+
+(** A digraph that contains a subdivision of [G] contains a subdivision of each subdigraph of
+    [G]. *)
+Lemma disubdivision_subdigraph (F G D : diGraph) :
+  subdigraph F G -> contains_disubdivision G D -> contains_disubdivision F D.
+Proof.
+move=> [e [e_inj e_arc]] [b [b_inj [paths [pth disj]]]].
+exists (b \o e); split; first exact: inj_comp.
+exists (fun u v => paths (e u) (e v)); split=> [u v uv|u v x y uv xy ne].
+  have [h1 h2 h3] := pth _ _ (e_arc _ _ uv); split=> //.
+  apply: disjointWr h3; apply/subsetP => z; rewrite !inE => /existsP[x xz].
+  by apply/existsP; exists (e x).
+by apply: disj; rewrite ?e_arc // !(inj_eq e_inj).
+Qed.
+
+(** ** Branchings *)
+
+(** The arcs of [digraph_of_arcs A] are the elements of [A]. *)
+Lemma edge_digraph_of_arcs (T : finType) (A : {set T * T}) (x y : T) :
+  @edge_rel (digraph_of_arcs A) x y = ((x, y) \in A).
+Proof. by []. Qed.
+
+(** If every element is reachable from [r], each [x != r] has a predecessor [p x] whose distance
+    [h] from [r] (the length of a shortest walk) is smaller. *)
+Lemma shortest_walk_parents (T : finType) (e : rel T) (r : T) :
+  (forall x, connect e r x) ->
+  exists (p : T -> T) (h : T -> nat), forall x, x != r -> e (p x) x /\ h (p x) < h x.
+Proof.
+move=> conn; pose P x n := [exists t : n.-tuple T, path e r t && (last r t == x)].
+have PP s : path e r s -> P (last r s) (size s).
+  by move=> ps; apply/existsP; exists (in_tuple s); rewrite ps eqxx.
+have exP x : exists n, P x n by have /connectP[s ps ->] := conn x; exists (size s); apply: PP.
+pose h x := ex_minn (exP x).
+have step x : exists y, x != r -> e y x && (h y < h x).
+  case: (eqVneq x r) => [_ | xr]; first by exists r.
+  rewrite {2}/h; case: (ex_minnP (exP x)) => n /existsP[t /andP[pt /eqP lt]] _.
+  move: (size_tuple t) pt lt xr; case/lastP: (tval t) => [/= _ _ -> | s y <-].
+    by rewrite eqxx.
+  rewrite rcons_path last_rcons size_rcons => /andP[ps ey] <- _; exists (last r s) => _.
+  by rewrite ey ltnS /h; case: ex_minnP => m _; apply; apply: PP.
+have [p hp] := fin_all_exists step.
+by exists p, h => x /hp /andP[].
+Qed.
+
+(** A strongly connected spanning subdigraph contains an out-branching rooted at any vertex:
+    the last arcs of shortest walks from the root. *)
+Lemma spanning_strong_out_branching (D : diGraph) (A : {set D * D}) (r : D) :
+  spanning_strong A -> exists2 F : {set D * D}, F \subset A & out_branching F r.
+Proof.
+case=> Asub /forallP/(_ r)/forallP/shortest_walk_parents[p [h ph]].
+pose F := [set a : D * D | (a.1 == p a.2) && (a.2 != r)].
+have FA : F \subset A by apply/subsetP => -[a b]; rewrite inE /= => /andP[/eqP-> /ph[]].
+exists F => //; apply/and4P; split.
+- exact: subset_trans Asub.
+- rewrite cards_eq0; apply/eqP/setP => y.
+  by rewrite !inE edge_digraph_of_arcs inE eqxx andbF.
+- apply/forallP => x; apply/implyP => xr.
+  rewrite -(cards1 (p x)); apply/eqP/eq_card => y.
+  by rewrite !inE edge_digraph_of_arcs inE xr andbT.
+- apply/acyclic_rankP; exists h => a b.
+  by rewrite edge_digraph_of_arcs inE /= => /andP[/eqP-> /ph[]].
+Qed.
+
+(** A strongly connected spanning subdigraph contains an in-branching rooted at any vertex:
+    the first arcs of shortest walks to the root. *)
+Lemma spanning_strong_in_branching (D : diGraph) (A : {set D * D}) (r : D) :
+  spanning_strong A -> exists2 F : {set D * D}, F \subset A & in_branching F r.
+Proof.
+case=> Asub /forallP conn.
+have /shortest_walk_parents[p [h ph]] : forall x, connect [rel x y | (y, x) \in A] r x.
+  by move=> x; rewrite connect_rev; apply/(forallP (conn x)).
+pose F := [set a : D * D | (a.2 == p a.1) && (a.1 != r)].
+have FA : F \subset A by apply/subsetP => -[a b]; rewrite inE /= => /andP[/eqP-> /ph[]].
+exists F => //; apply/and4P; split.
+- exact: subset_trans Asub.
+- rewrite cards_eq0; apply/eqP/setP => y.
+  by rewrite !inE edge_digraph_of_arcs inE eqxx andbF.
+- apply/forallP => x; apply/implyP => xr.
+  rewrite -(cards1 (p x)); apply/eqP/eq_card => y.
+  by rewrite !inE edge_digraph_of_arcs inE xr andbT.
+- apply/acyclic_rankP; exists (fun x => \max_y h y - h x) => a b.
+  rewrite edge_digraph_of_arcs inE /= => /andP[/eqP-> /ph[_ hb]].
+  exact: ltn_sub2l (leq_trans hb (leq_bigmax a)) hb.
+Qed.

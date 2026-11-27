@@ -12,7 +12,7 @@ edge for all the allowed targets is at most 6a.  So some target does not increas
 a sum over A of products of the weights of the edges already added, and of 6a for each edge to be
 added [potential_cons].  The coefficient c(a) of A in this sum is arbitrary here. *)
 
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

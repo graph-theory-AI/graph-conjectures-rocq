@@ -8,7 +8,7 @@ them is a shortest walk. *)
 From GraphTheory Require Import digraph sgraph connectivity.
 From GC.GraphLib Require Import misc.
 From GC.extremal.OPG_3_connected_geodesic_cycles_peripheral_lengths Require main.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

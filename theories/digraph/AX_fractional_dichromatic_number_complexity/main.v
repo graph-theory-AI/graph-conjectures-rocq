@@ -33,7 +33,7 @@ this linear program is attained whenever it is feasible.  The weights are in an 
 ordered field (rational or real numbers for instance). *)
 
 From GraphTheory Require Import digraph.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -52,6 +52,8 @@ Definition acyclic (D : diGraph) : bool :=
     colours so that each colour class induces an acyclic digraph. *)
 Definition dicolorable (D : diGraph) (k : nat) : Prop :=
   exists col : D -> 'I_k, forall i : 'I_k, acyclic (induced [set v | col v == i]).
+
+(** ** Definitions copied from GraphLib/fractional.v *)
 
 (** The fractional dichromatic number of [D] is at most [p]: nonnegative weights on the
     sets inducing an acyclic digraph, of total at most [p], cover each vertex with weight

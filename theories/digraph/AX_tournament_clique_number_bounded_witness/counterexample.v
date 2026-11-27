@@ -19,7 +19,7 @@ formalized in graph-theory-rocq
 (digraph-theory/theories/applications/question_5_9_resolution.v). *)
 
 From GraphTheory Require Import digraph.
-From mathcomp Require Import boot algebra zify.
+From mathcomp Require Import boot ssralg zmodp zify_ssreflect.
 From GC.GraphLib Require Import digraph.
 From GC.digraph.AX_tournament_clique_number_bounded_witness Require main.
 

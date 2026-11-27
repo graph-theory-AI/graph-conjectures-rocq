@@ -24,7 +24,7 @@ it is for some rational numbers x' >= x and y' >= y in (0,1], so that ψ(x,y) is
 ψ(x',y'). *)
 
 From GraphTheory Require Import preliminaries digraph sgraph dom.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum rat.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -17,7 +17,7 @@ three vertices.  A cycle C is ℓ-geodesic if, for any two vertices u and v of C
 v with all its edges on C has the minimum length among all walks from u to v in G. *)
 
 From GraphTheory Require Import digraph sgraph connectivity.
-From mathcomp Require Import boot order algebra.
+From mathcomp Require Import boot order ssralg ssrnum.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

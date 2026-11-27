@@ -30,6 +30,8 @@ Unset Printing Implicit Defensive.
 Definition planar (G : sgraph) : Prop :=
   ~ minor G 'K_5 /\ ~ minor G (KB 3 3).
 
+(** ** Definitions copied from GraphLib/geometric.v *)
+
 Section StraightLine.
 Variable R : realFieldType.
 Local Open Scope ring_scope.

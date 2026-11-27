@@ -6,7 +6,7 @@ of a set of a vertices is the inverse of [threshold n a] = (4n)^((d + 1) a) a^a,
 'C(n, a) (6a)^((d + 2) a) / [threshold n a] <= 2^-a if d is large enough [count_small], from
 'C(n, a) <= (4n/a)^a [bin_le].  So the potential is less than 1, that is [total n]. *)
 
-From mathcomp Require Import boot zify.
+From mathcomp Require Import boot zify_ssreflect.
 From GC.packing.OPG_matching_cut_average_degree_girth Require Import greedy.
 
 Set Implicit Arguments.

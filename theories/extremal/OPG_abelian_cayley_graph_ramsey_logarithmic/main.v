@@ -35,6 +35,8 @@ Proof. by move=> x; rewrite eqxx. Qed.
 Definition sgraph_of_rel (V : finType) (r : rel V) : sgraph :=
   SGraph (@sgraph_of_rel_sym V r) (@sgraph_of_rel_irrefl V r).
 
+(** ** Definitions copied from GraphLib/spectral.v *)
+
 (** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
     without the neutral element). *)
 Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=

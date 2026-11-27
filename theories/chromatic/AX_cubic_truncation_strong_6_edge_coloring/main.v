@@ -14,6 +14,12 @@ In other words, is it true that χ'_s(T(G)) = 6 for every cubic graph G?
 
 The proposition states the positive answer to the second question.
 
+Proxy.  The positive answer to the first question is stated as
+[proxy_AX_cubic_truncation_strong_6_edge_coloring] (diamond-free means without induced diamond).
+Apart from K_4, the diamond-free claw-free cubic graphs are the truncations of the loopless cubic
+multigraphs, so the two formulations of the record are not equivalent: 24 loopless connected cubic multigraphs on at most 10 vertices, all with parallel
+edges, have a truncation needing more than 6 colours (SAT).  The proxy is therefore false.
+
 Encoding.  Graphs are finite and simple.  The graph G is nonempty, since χ'_s is 0 for the empty
 graph.  The vertices of T(G) are the darts of G (the edges with an orientation): the darts leaving a
 vertex form a triangle, and each dart is joined to the opposite one.  The first formulation also
@@ -29,6 +35,18 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (** ** Definitions copied from GraphLib/misc.v *)
+
+(** [G] has an induced subgraph isomorphic to [H]. *)
+Definition has_induced_copy (G H : sgraph) : Prop := inhabited (H ⇀ G).
+
+(** [G] has no induced subgraph isomorphic to [H]. *)
+Definition induced_free (G H : sgraph) : Prop := ~ has_induced_copy G H.
+
+(** The diamond: [K_4] minus an edge. *)
+Definition diamond : sgraph := del_edges ([set ord0; ord_max] : {set 'K_4}).
+
+(** [G] has no induced claw ([K_1,3]). *)
+Definition claw_free (G : sgraph) : Prop := induced_free G 'K_1,3.
 
 Lemma sgraph_of_rel_sym (V : finType) (r : rel V) :
   symmetric (fun x y => (x != y) && sc r x y).
@@ -105,3 +123,7 @@ Definition truncation (G : sgraph) : sgraph :=
 Definition AX_cubic_truncation_strong_6_edge_coloring : Prop :=
   forall G : sgraph,
     0 < #|G| -> regular G 3 -> strong_chromatic_index (truncation G) = 6.
+
+Definition proxy_AX_cubic_truncation_strong_6_edge_coloring : Prop :=
+  forall G : sgraph,
+    regular G 3 -> induced_free G diamond -> claw_free G -> strong_chromatic_index G <= 6.

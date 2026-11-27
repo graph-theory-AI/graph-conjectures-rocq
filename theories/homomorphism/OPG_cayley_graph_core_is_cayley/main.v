@@ -39,11 +39,6 @@ Proof. by move=> x; rewrite eqxx. Qed.
 Definition sgraph_of_rel (V : finType) (r : rel V) : sgraph :=
   SGraph (@sgraph_of_rel_sym V r) (@sgraph_of_rel_irrefl V r).
 
-(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
-    without the neutral element). *)
-Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
-  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).
-
 (** ** Definitions copied from GraphLib/homomorphism.v *)
 
 (** There is a homomorphism from [G] to [H]. *)
@@ -54,6 +49,13 @@ Definition hom_equiv (G H : diGraph) : Prop := homs_to G H /\ homs_to H G.
 
 (** [G] is a core: all its endomorphisms are bijective. *)
 Definition is_core (G : diGraph) : Prop := forall f : G -> G, is_dhom f -> bijective f.
+
+(** ** Definitions copied from GraphLib/spectral.v *)
+
+(** The (undirected) Cayley graph of the group [gT] for the connection set [S] (made symmetric,
+    without the neutral element). *)
+Definition cayley_graph (gT : finGroupType) (S : {set gT}) : sgraph :=
+  sgraph_of_rel (fun x y : gT => (x^-1 * y)%g \in S).
 
 (** ** Statement *)
 

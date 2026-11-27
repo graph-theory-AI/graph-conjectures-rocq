@@ -43,7 +43,7 @@ Definition bounded_expansion (C : sgraph -> Prop) : Prop :=
   exists f : nat -> nat, forall (r : nat) (G H : sgraph),
     C G -> shallow_minor G H r -> 2 * #|E(H)| <= f r * #|H|.
 
-(** ** Definitions copied from GraphLib/chromatic.v *)
+(** ** Definitions copied from GraphLib/fractional.v *)
 
 (** The Hall ratio of [G] is at most [p / q]: so is the ratio of the number of vertices to the
     independence number for all its subgraphs. *)

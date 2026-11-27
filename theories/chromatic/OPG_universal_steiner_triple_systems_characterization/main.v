@@ -17,7 +17,10 @@ Problem: which Steiner triple systems are universal?
 The proposition states the answer for point-transitive systems: a point-transitive Steiner triple
 system is universal if and only if it is neither projective nor affine (Holroyd, Škoviera; Král',
 Máčajová, Pór, Sereni).  It is weaker than an answer to the problem, as it says nothing of the
-systems that are not point-transitive.
+systems that are not point-transitive.  Without point-transitivity, the characterization would be
+false: according to a search summary of the abstract of Grannell, Griggs, Mačajová, Škoviera
+(2013), there are non-universal systems that are neither projective nor affine (the paper was not
+read).
 
 Encoding.  A Steiner triple system is given by the set B of its triples, or blocks, on a finite type
 of points.  Systems with at most three points, which are not universal, need no special treatment:
