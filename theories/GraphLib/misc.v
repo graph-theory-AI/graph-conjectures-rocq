@@ -1375,3 +1375,233 @@ case/or3P=> [/eqP/setP/(_ u)|/eqP/setP/(_ u)|/mem_seq_edge_list/(_ (set21 _ _))]
 - by rewrite set22 !inE (negbTE nuv) orbF => /esym/eqP->; rewrite eqxx orbT.
 - by rewrite (negbTE vs).
 Qed.
+
+(** ** Walks in multigraphs *)
+
+Section Walks.
+Variable G : mgraph.
+Implicit Types (x y z : G) (e : edge G) (w : seq (edge G)).
+
+Lemma uwalk_edge e (b : bool) : uwalk (endpoint b e) (endpoint (~~ b) e) [:: e].
+Proof. by case: b; rewrite /= !eqxx ?orbT. Qed.
+
+Lemma uwalk_cat x y z w1 w2 : uwalk x y w1 -> uwalk y z w2 -> uwalk x z (w1 ++ w2).
+Proof.
+elim: w1 x => [x /eqP -> //|e w1 IH x /= h1 h2].
+by case/orP: h1 => /andP[-> h]; rewrite (IH _ h h2) ?orbT.
+Qed.
+
+Lemma uwalk_rev x y w : uwalk x y w -> uwalk y x (rev w).
+Proof.
+elim: w x => [x /eqP -> /=|e w IH x /= h]; first by rewrite eqxx.
+rewrite rev_cons -cats1.
+by case/orP: h => /andP[/eqP <- /IH h]; apply: uwalk_cat h (uwalk_edge e _).
+Qed.
+
+End Walks.
+
+(** ** Degrees in multigraphs *)
+
+Section Degrees.
+Variable G : mgraph.
+Implicit Types (C D : {set edge G}) (S : {set G}) (v : G) (e : edge G).
+
+Lemma incidentE v e : incident v e = (source e == v) || (target e == v).
+Proof.
+by apply/existsP/orP => [[[] /eqP ->]|[] /eqP <-]; [right | left | exists false | exists true].
+Qed.
+
+Lemma mdeg_inE C v : mdeg_in C v = \sum_(e in C) ((source e == v) + (target e == v)).
+Proof.
+rewrite big_split /=; congr (_ + _); rewrite -sum1_card big_mkcond [RHS]big_mkcond /=;
+  by apply: eq_bigr => e _; rewrite inE; case: (e \in C); case: (_ == v).
+Qed.
+
+Lemma mdeg_in_setD C D v : D \subset C -> mdeg_in C v = mdeg_in D v + mdeg_in (C :\: D) v.
+Proof. by move=> DC; rewrite !mdeg_inE (big_setID D) /= (setIidPr DC). Qed.
+
+(** In a loopless multigraph, the degree of [v] in [C] is the number of edges of [C] at [v]. *)
+Lemma mdeg_in_loopless C v : mloopless G -> mdeg_in C v = #|C :&: edges_at v|.
+Proof.
+move=> ll; rewrite mdeg_inE -sum1_card [RHS]big_mkcond [LHS]big_mkcond /=.
+apply: eq_bigr => e _; rewrite !inE incidentE; case: (e \in C) => //=; have := ll e.
+by case: (source e =P v) => [->|_]; case: (target e =P v) => [->|_]; rewrite ?eqxx.
+Qed.
+
+(** Handshake lemma: the sum of the degrees in [C] of the vertices of [S] counts each edge of [C]
+    once for each of its ends in [S]. *)
+Lemma sum_mdeg_in C S :
+  \sum_(v in S) mdeg_in C v = \sum_(e in C) ((source e \in S) + (target e \in S)).
+Proof.
+rewrite (eq_bigr _ (fun v _ => mdeg_inE C v)) exchange_big /=; apply: eq_bigr => e _.
+have h x : \sum_(v in S) (x == v : nat) = (x \in S).
+  case xS: (x \in S).
+    by rewrite (bigD1 x) //= eqxx big1 // => v /andP[_ xv]; rewrite eq_sym (negbTE xv).
+  by rewrite big1 // => v vS; case: eqP => // xv; rewrite xv vS in xS.
+by rewrite big_split /= !h.
+Qed.
+
+End Degrees.
+
+(** ** Parity of cuts *)
+
+Section CutParity.
+Variable G : mgraph.
+Implicit Types (C : {set edge G}) (S : {set G}).
+
+(** The sum of the degrees in [C] of the vertices of [S] has the parity of the number of edges of
+    [C] in the cut of [S]. *)
+Lemma odd_mdeg_sum C S : odd (\sum_(v in S) mdeg_in C v) = odd #|C :&: mcut S|.
+Proof.
+have mix (b1 b2 : bool) : b1 + b2 = b1 (+) b2 + 2 * (b1 && b2) by case: b1; case: b2.
+rewrite sum_mdeg_in (eq_bigr _ (fun e _ => mix _ _)) big_split /= -big_distrr /= oddD oddM.
+rewrite /= addbF; congr odd; rewrite -sum1_card big_mkcond [RHS]big_mkcond /=.
+by apply: eq_bigr => e _; rewrite !inE; case: (e \in C).
+Qed.
+
+End CutParity.
+
+(** ** Cuts and bridges of multigraphs *)
+
+Section Cuts.
+Variable G : mgraph.
+Implicit Types (x y z : G) (w : seq (edge G)) (S : {set G}).
+
+(** A walk from [S] to its complement uses an edge of the cut of [S]. *)
+Lemma uwalk_mcut S x y w :
+  uwalk x y w -> (x \in S) != (y \in S) -> exists2 e, e \in w & e \in mcut S.
+Proof.
+elim: w x => [x /eqP <-|e w IH x /= h xy]; first by rewrite eqxx.
+have [z zy exz] : exists2 z, uwalk z y w & ((x \in S) (+) (z \in S)) = (e \in mcut S).
+  by rewrite inE; case/orP: h => /andP[/eqP <- h]; [exists (target e)|exists (source e);
+    rewrite // addbC].
+have [/(IH _ zy)[f fw fS]|] := boolP ((z \in S) != (y \in S)).
+  by exists f; rewrite // inE fw orbT.
+by move/negPn/eqP => zyS; exists e; rewrite ?mem_head // -exz zyS -negb_eqb.
+Qed.
+
+(** In a bridgeless multigraph, a nonempty cut has at least two edges. *)
+Lemma bridgeless_mcut S e : bridgeless G -> e \in mcut S -> 1 < #|mcut S|.
+Proof.
+move=> bl eS; rewrite ltnNge; apply/negP => /card_le1_eqP le1; apply: (bl e) => w ew.
+have [|f fw fS] := uwalk_mcut (S := S) ew; first by rewrite inE -negb_eqb in eS.
+by rewrite (le1 _ _ fS eS).
+Qed.
+
+(** Two vertices that are not connected are separated by an empty cut. *)
+Lemma mcut_disconnected x y :
+  ~~ connect (@sedge (skeleton.skeleton G)) x y ->
+  exists S, [/\ x \in S, y \notin S & mcut S = set0].
+Proof.
+move=> nxy; exists [set z | connect (@sedge (skeleton.skeleton G)) x z].
+rewrite !inE connect0 nxy; split => //; apply/setP => e; rewrite !inE.
+have [st|] := eqVneq (source e) (target e); first by rewrite st addbb.
+move=> st; have adj : @sedge (skeleton.skeleton G) (source e) (target e).
+  by rewrite /edge_rel /= /skeleton.sk_rel st skeleton.adjacent_edge.
+have [xs|xs] := boolP (connect _ x (source e)); first by rewrite (connect_trans xs (connect1 adj)).
+apply/negbTE; apply: contra xs => xt; apply: connect_trans xt (connect1 _).
+by rewrite sg_sym.
+Qed.
+
+(** A multigraph is connected if every cut separating two vertices is nonempty. *)
+Lemma mcut_connected :
+  (forall S x y, x \in S -> y \notin S -> mcut S != set0) -> connected [set: skeleton.skeleton G].
+Proof.
+move=> cutS; apply: connectedTI => x y; apply/negPn/negP => /mcut_disconnected[S [xS yS S0]].
+by move/eqP: (cutS S x y xS yS).
+Qed.
+
+End Cuts.
+
+(** A multigraph is [k]-edge-connected if every cut separating two vertices has at least [k]
+    edges. *)
+Lemma mcut_medge_connected (G : mgraph) k :
+  (forall (S : {set G}) x y, x \in S -> y \notin S -> k <= #|mcut S|) -> medge_connected G k.
+Proof.
+move=> cutS E Ek; apply: connectedTI => x y; apply/negPn/negP.
+move=> /(@mcut_disconnected (remove_edges E))[S [xS yS S0]].
+suff : @mcut G S \subset E.
+  by move/subset_leq_card/(leq_trans (cutS S x y xS yS)); rewrite leqNgt Ek.
+apply/subsetP => e eS; apply/negPn/negP => eE.
+have := in_set0 (Sub e eE : edge (remove_edges E)); rewrite -S0 inE.
+by move: eS; rewrite inE => /= ->.
+Qed.
+
+(** Two vertices are joined by a walk if every cut separating them is nonempty. *)
+Lemma mcut_uwalk (G : mgraph) :
+  (forall (S : {set G}) x y, x \in S -> y \notin S -> mcut S != set0) ->
+  forall x y : G, exists w, uwalk x y w.
+Proof.
+move=> cutS x y; pose r : rel G := fun a b =>
+  [exists e, (source e == a) && (target e == b) || (target e == a) && (source e == b)].
+have walk a b : connect r a b -> exists w, uwalk a b w.
+  case/connectP => p; elim: p a => [a _ -> |c p IH a /= /andP[/existsP[e ace] pc] lc].
+    by exists [::]; rewrite /= eqxx.
+  have [w cw] := IH c pc lc; exists (e :: w).
+  by case/orP: ace => /andP[/eqP sa /eqP tc]; rewrite /= sa tc cw eqxx ?orbT.
+apply: walk; apply/negPn/negP => nxy.
+have := cutS [set z | connect r x z] x y; rewrite !inE connect0 nxy => /(_ isT isT) /set0Pn[e].
+have ra b : r (endpoint b e) (endpoint (~~ b) e).
+  by apply/existsP; exists e; case: b; rewrite !eqxx ?orbT.
+rewrite !inE; case sx: (connect r x (source e)); case tx: (connect r x (target e)) => //= _.
+  by move: tx; rewrite (connect_trans sx (connect1 (ra false))).
+by move: sx; rewrite (connect_trans tx (connect1 (ra true))).
+Qed.
+
+(** A loopless cubic graph whose separating cuts have at least two edges is 2-connected: the three
+    edges at a cut vertex would leave a side with a single edge. *)
+Lemma cubic_2connected (H : mgraph) : mloopless H -> mcubic H ->
+  (forall (S : {set H}) x y, x \in S -> y \notin S -> 1 < #|mcut S|) -> 2 < #|H| ->
+  kconnected 2 (skeleton.skeleton H).
+Proof.
+move=> ll cub cut2 H2; split=> // S.
+case/vseparator_separation => V1 [V2 [[[cov sep] [x [y [x2 y1]]]] ->]].
+have in12 v : v \notin V2 -> v \in V1 by have := cov v; rewrite inE => /orP[|->].
+have in21 v : v \notin V1 -> v \in V2 by have := cov v; rewrite inE => /orP[->|].
+(* no edge between the two sides *)
+have noedge (e : edge H) c : endpoint c e \notin V2 -> endpoint (~~ c) e \notin V1 -> False.
+  move=> h2 h1; have := sep _ _ h2 h1; rewrite /edge_rel /= /skeleton.sk_rel.
+  have ne : endpoint c e != endpoint (~~ c) e by apply: contraNneq h1 => <-; exact: in12.
+  have ad : skeleton.adjacent (endpoint c e) (endpoint (~~ c) e).
+    by case: (c) {h2 h1 ne}; rewrite ?skeleton.adjacent_edge // skeleton.adjacent_sym
+      skeleton.adjacent_edge.
+  by rewrite ne ad.
+have endX (X : {set H}) e :
+    e \in mcut X -> exists c, (endpoint c e \in X) && (endpoint (~~ c) e \notin X).
+  by rewrite inE; case sX: (source e \in X); case tX: (target e \in X) => //= _;
+    [exists false | exists true]; rewrite /= ?sX ?tX.
+(* an edge of the cut of a side has its other end in [V1 :&: V2] *)
+pose A := ~: V2; pose B := ~: V1.
+have otherA e c :
+    endpoint c e \in A -> endpoint (~~ c) e \notin A -> endpoint (~~ c) e \in V1 :&: V2.
+  rewrite !inE negbK => h2 h1; rewrite h1 andbT; apply/negPn/negP => h1'; exact: noedge h2 h1'.
+have otherB e c :
+    endpoint c e \in B -> endpoint (~~ c) e \notin B -> endpoint (~~ c) e \in V1 :&: V2.
+  rewrite !inE negbK => h1 h2; rewrite h2 /=; apply/negPn/negP => h2'.
+  by apply: (noedge e (~~ c)); rewrite ?negbK.
+have cA : 1 < #|mcut A| by apply: (cut2 A x y); rewrite inE // negbK in21.
+have cB : 1 < #|mcut B| by apply: (cut2 B y x); rewrite inE // negbK in12.
+rewrite ltnNge; apply/negP => I1.
+have [e eA] : exists e, e \in mcut A by apply/card_gt0P; apply: ltnW.
+have [c /andP[ceA ceA']] := endX A e eA; have sI := otherA e c ceA ceA'.
+set s := endpoint (~~ c) e in sI.
+have Is : V1 :&: V2 = [set s] by apply/eqP; rewrite eq_sym eqEcard sub1set sI cards1.
+(* the two cuts are disjoint sets of edges at [s], which has only three edges *)
+have atS (X : {set H}) : (forall f d, endpoint d f \in X -> endpoint (~~ d) f \notin X ->
+    endpoint (~~ d) f \in V1 :&: V2) ->
+  forall f, f \in mcut X -> exists d, (endpoint d f \in X) && (endpoint (~~ d) f == s).
+  move=> oth f /endX[d /andP[h1 h2]]; exists d; rewrite h1 /=.
+  by have := oth f d h1 h2; rewrite Is inE.
+have sub : mcut A :|: mcut B \subset edges_at s.
+  apply/subsetP => f /setUP[/(atS A otherA)|/(atS B otherB)] [d /andP[_ /eqP fs]];
+    by rewrite inE; apply/existsP; exists (~~ d); rewrite fs.
+have sV1 : s \in V1 by move: sI; rewrite inE => /andP[].
+have disj : mcut A :&: mcut B = set0.
+  apply/setP => f; rewrite [in RHS]inE; apply/setIP => -[/(atS A otherA)[d /andP[dA /eqP ds]]].
+  case/(atS B otherB) => d' /andP[dB _]; have [ed|/negPf ned] := eqVneq d' d.
+    by rewrite ed !inE in dB dA; have := cov (endpoint d f); rewrite inE (negbTE dA) (negbTE dB).
+  have dd : d' = ~~ d by move: ned; case: (d); case: (d').
+  by rewrite dd ds inE sV1 in dB.
+have := subset_leq_card sub; rewrite cardsU disj cards0 subn0 cub => le3.
+by have := leq_trans (leq_add cA cB) le3.
+Qed.
