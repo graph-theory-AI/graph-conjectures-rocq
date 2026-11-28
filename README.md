@@ -24,7 +24,7 @@ Each conjecture has a directory `theories/topic/conj_name/`, where `conj_name` i
 
 ### Conjecture proofs
 
-Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs). Some of them were simplified through user prompting. If the conjecture is proved or disproved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem conj_name_holds : conj_name.` or `Theorem conj_name_fails : ~ conj_name.` with a one-line proof by a lemma from another file. `proof.v` imports only the proposition from `main` (`Require Import main(conj_name)`), and requires the other file without importing it.
+Some of the proofs come from [Graph-Theory-LLM-Proofs](https://github.com/graph-theory-AI/Graph-Theory-LLM-Proofs), [openai-math](https://github.com/openai/math) and [anthropics-formal-math](https://github.com/anthropics/formal-math). Some of them were simplified through user prompting. If the conjecture is proved or disproved, the proof is contained in one or more additional files (possibly organized in subdirectories) in the directory of the conjecture. A minimalist `proof.v` states a theorem of the form `Theorem conj_name_holds : conj_name.` or `Theorem conj_name_fails : ~ conj_name.` with a one-line proof by a lemma from another file. `proof.v` imports only the proposition from `main` (`Require Import main(conj_name)`), and requires the other file without importing it.
 
 ### Checking a proof
 
@@ -44,10 +44,10 @@ A definition, lemma or theorem is added to the library if it is considered stand
 
 Progress is reported (mostly by AI agents) in:
 
-- [conjectures.md](progress/conjectures.md) (503 statements formalized, including 12 proxies)
-- [conjecture-proofs.md](progress/conjecture-proofs.md) (22 conjectures proved or disproved, including 1 proxy)
-- [relation-proofs.md](progress/relation-proofs.md) (95 relations proved)
-- [graph-library.md](progress/graph-library.md) (735 definitions and 397 statements)
+- [conjectures.md](progress/conjectures.md) (504 statements formalized, including 12 proxies)
+- [conjecture-proofs.md](progress/conjecture-proofs.md) (23 conjectures proved or disproved, including 1 proxy)
+- [relation-proofs.md](progress/relation-proofs.md) (96 relations proved)
+- [graph-library.md](progress/graph-library.md) (742 definitions and 431 statements)
 - [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, disproved statements, choices and statuses to be checked; the column "user input" is for human decisions, signed with initials)
 
 

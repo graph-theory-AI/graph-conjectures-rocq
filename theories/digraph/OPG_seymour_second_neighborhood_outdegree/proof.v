@@ -1,0 +1,10 @@
+From GC.digraph.OPG_seymour_second_neighborhood_outdegree Require Import main(OPG_seymour_second_neighborhood_outdegree).
+From GC.digraph.OPG_seymour_second_neighborhood_outdegree Require seymour.
+
+Theorem OPG_seymour_second_neighborhood_outdegree_holds :
+  OPG_seymour_second_neighborhood_outdegree.
+Proof. exact seymour.seymour_second_neighbourhood. Qed.
+
+Check (OPG_seymour_second_neighborhood_outdegree_holds :
+  GC.digraph.OPG_seymour_second_neighborhood_outdegree.main.OPG_seymour_second_neighborhood_outdegree).
+Print Assumptions OPG_seymour_second_neighborhood_outdegree_holds.

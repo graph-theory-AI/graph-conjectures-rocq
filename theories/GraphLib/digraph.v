@@ -171,6 +171,12 @@ Definition digraph_subst (D1 : diGraph) (u : D1) (D2 : diGraph) : diGraph :=
 Definition digraph_blowup (D : diGraph) (k : nat) : diGraph :=
   DiGraph (fun a b : D * 'I_k => a.1 -- b.1).
 
+(** Lexicographic product D[T_m] by the transitive tournament on [m] vertices: each vertex is
+    replaced by a transitive tournament (arcs from smaller to larger labels), with all the arcs
+    from the block of [v] to the block of [w] for each arc [v -> w]. *)
+Definition tt_blowup (D : diGraph) (m : nat) : diGraph :=
+  DiGraph (fun x y : D * 'I_m => (x.1 -- y.1) || ((x.1 == y.1) && (x.2 < y.2))).
+
 (** ** Directed paths and cycles *)
 
 (** The vertices [x :: s] form a directed path (from [x] to [last x s], of length [size s]). *)
@@ -777,4 +783,75 @@ exists F => //; apply/and4P; split.
 - apply/acyclic_rankP; exists (fun x => \max_y h y - h x) => a b.
   rewrite edge_digraph_of_arcs inE /= => /andP[/eqP-> /ph[_ hb]].
   exact: ltn_sub2l (leq_trans hb (leq_bigmax a)) hb.
+Qed.
+
+(** ** Out-neighbourhoods of sets *)
+
+Section NS.
+Variable D : diGraph.
+Implicit Types (S T : {set D}).
+
+Lemma in_NS S y : (y \in NS(S)) = [exists x in S, x -- y].
+Proof.
+apply/bigcupP/existsP => [[x xS]|[x /andP[xS xy]]]; last by exists x; rewrite ?in_opn.
+by rewrite in_opn => xy; exists x; rewrite xS.
+Qed.
+
+Lemma NS_sub S T : S \subset T -> NS(S) \subset NS(T).
+Proof.
+move=> ST; apply/subsetP => y; rewrite !in_NS => /existsP[x /andP[xS xy]].
+by apply/existsP; exists x; rewrite (subsetP ST).
+Qed.
+
+Lemma NSU S T : NS(S :|: T) = NS(S) :|: NS(T).
+Proof.
+apply/setP => y; rewrite in_setU !in_NS; apply/existsP/orP => [[x /andP[]]|].
+- by rewrite in_setU => /orP[] xS xy; [left|right]; apply/existsP; exists x; rewrite xS.
+- by case=> /existsP[x /andP[xS xy]]; exists x; rewrite in_setU xS ?orbT.
+Qed.
+
+(** The second out-neighbours of [v]: the ends of the walks of length two from [v] that are
+    neither [v] nor out-neighbours of [v]. *)
+Lemma in_second (v x : D) :
+  (x \in second_outneigh v) = [&& x != v, ~~ (v -- x) & [exists u, (v -- u) && (u -- x)]].
+Proof.
+rewrite /second_outneigh !inE negb_or -andbA in_NS; congr [&& _, _ & _].
+by apply/existsP/existsP => -[u]; rewrite ?in_opn => h; exists u; rewrite ?in_opn.
+Qed.
+
+(** Counting a set of vertices of an induced subdigraph in [D]. *)
+Lemma card_induced (S : {set D}) (A : {set induced S}) (B : {set D}) :
+  B \subset S -> (forall x : induced S, (x \in A) = (val x \in B)) -> #|A| = #|B|.
+Proof.
+move=> BS AB; rewrite -(card_imset _ val_inj); apply: eq_card => y.
+apply/imsetP/idP => [[x xA ->]|yB]; first by rewrite -AB.
+by exists (Sub y (subsetP BS y yB)); rewrite ?AB SubK.
+Qed.
+
+End NS.
+
+(** ** Deletion of arcs, blow-up by transitive tournaments *)
+
+Lemma oriented_del_arcs (D : diGraph) (F : {set D * D}) : oriented D -> oriented (del_arcs F).
+Proof. by move=> oD x y /andP[/oD yx _]; apply/nandP; left. Qed.
+
+Lemma num_edges_del_arcs (D : diGraph) (F : {set D * D}) :
+  [exists a in F, a.1 -- a.2] -> num_edges (del_arcs F) < num_edges D.
+Proof.
+case/exists_inP => a aF aE; apply: proper_card; apply/properP; split.
+  by apply/subsetP => -[x y] /andP[].
+by exists a; case: a aF aE => // x y aF _; rewrite inE /edge_rel /= aF andbF.
+Qed.
+
+Lemma tt_edgeE (D : diGraph) m (x y : tt_blowup D m) :
+  (x -- y) = (x.1 -- y.1) || ((x.1 == y.1) && (x.2 < y.2)).
+Proof. by []. Qed.
+
+Lemma tt_blowup_oriented (D : diGraph) m : oriented D -> oriented (tt_blowup D m).
+Proof.
+move=> oD [u a] [v b]; have loop (w : D) : ~~ (w -- w).
+  by apply/negP => ww; move: (oD _ _ ww); rewrite ww.
+rewrite !tt_edgeE /= negb_or negb_and => /orP[uv|/andP[/eqP<- ab]].
+  by rewrite oD //=; case: eqP uv => [->|//]; rewrite (negbTE (loop u)).
+by rewrite loop eqxx /= -leqNgt ltnW.
 Qed.

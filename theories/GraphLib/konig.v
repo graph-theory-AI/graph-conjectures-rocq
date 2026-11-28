@@ -205,3 +205,122 @@ have e : [set x; y] = [set x; z].
 have : z \in [set x; y] by rewrite e set22.
 by rewrite !inE [z == y]eq_sym (negPf yz) orbF => /eqP zx; rewrite zx sg_irrefl in xz.
 Qed.
+
+(** ** König's theorem for matchings between two finite types
+
+A bipartite graph is given by a boolean relation [E : L -> R -> bool] between two finite types;
+a matching [bimatching E M] is a set of pairs [(l, r)] with [E l r], no two of which share a
+first or a second coordinate, and a vertex cover [bivcover E A B] is a pair of sets meeting
+every edge.  (GraphTheory defines matchings of a simple graph as sets of 2-sets, and
+[dimatching] on the vertex type of a digraph; these do not allow the two sides to have
+different types.)  König's theorem [konig_bimatching] gives a matching together with a vertex
+cover of at most the same size made of non-isolated vertices.  It is derived from
+[min_vcover_matching] and [min_max_cover] of GraphTheory, applied to the simple graph on [L + R]
+whose edges are the pairs [inl l, inr r] with [E l r] and to a smallest vertex cover.
+
+Used by the proof of Seymour's second neighbourhood conjecture
+(theories/digraph/OPG_seymour_second_neighborhood_outdegree), which follows the paper of
+OpenAI, a model-generated manuscript that is not peer reviewed,
+https://github.com/openai/math/blob/3344da59991ed94f9ba711217b29c1d760badfa6/preprints/A-proof-of-Seymours-second-neighborhood-conjecture-September-23-2026/paper.pdf
+whose Lean formalization proves this statement from Hall's theorem (MatchingCover.lean),
+https://github.com/openai/math/tree/3344da59991ed94f9ba711217b29c1d760badfa6/lean/OAI/Combinatorics/SecondNeighborhood *)
+
+Section Bipartite.
+Variables (L R : finType) (E : L -> R -> bool).
+Implicit Types (M N : {set L * R}) (A : {set L}) (B : {set R}).
+
+(** [M] is a matching of [E]. *)
+Definition bimatching M : bool :=
+  [&& [forall e in M, E e.1 e.2],
+      [forall e in M, forall f in M, (e.1 == f.1) ==> (e == f)] &
+      [forall e in M, forall f in M, (e.2 == f.2) ==> (e == f)]].
+
+(** [(A, B)] covers every edge of [E]. *)
+Definition bivcover A B : bool := [forall l, forall r, E l r ==> (l \in A) || (r \in B)].
+
+Lemma bimatchingP M :
+  reflect [/\ {in M, forall e, E e.1 e.2}, {in M &, forall e f, e.1 = f.1 -> e = f} &
+              {in M &, forall e f, e.2 = f.2 -> e = f}] (bimatching M).
+Proof.
+have inj2P (g : L * R -> L * R -> bool) :
+  reflect {in M &, forall e f, g e f -> e = f}
+          [forall e in M, forall f in M, g e f ==> (e == f)].
+  apply: (iffP forall_inP) => [h e f eM fM gef|h e eM].
+    by apply/eqP; move/forall_inP: (h e eM) => /(_ f fM); rewrite gef.
+  by apply/forall_inP => f fM; apply/implyP => /(h e f eM fM) ->.
+apply: (iffP and3P) => [[/forall_inP h1 /inj2P h2 /inj2P h3]|[h1 h2 h3]].
+  by split=> // e f eM fM /eqP; [apply: h2 | apply: h3].
+by split; [apply/forall_inP | apply/inj2P => e f eM fM /eqP; apply: h2 |
+           apply/inj2P => e f eM fM /eqP; apply: h3].
+Qed.
+
+(** The simple graph on [L + R] with an edge [inl l -- inr r] for each [E l r]. *)
+Local Definition brel (x y : L + R) : bool :=
+  match x, y with inl l, inr r | inr r, inl l => E l r | _, _ => false end.
+
+Local Lemma brel_sym : symmetric brel. Proof. by case=> ? []. Qed.
+Local Lemma brel_irrefl : irreflexive brel. Proof. by case. Qed.
+Local Definition BG := SGraph brel_sym brel_irrefl.
+
+(** The edge of [BG] of a pair. *)
+Local Definition phi (e : L * R) : {set BG} := [set inl e.1; inr e.2].
+
+Local Lemma phi_inj : injective phi.
+Proof.
+move=> [l r] [l' r'] /setP h.
+have /set2P [[<-]|//] : inl l \in phi (l', r') by rewrite -h set21.
+by have /set2P [//|[<-]] : inr r \in phi (l', r') by rewrite -h set22.
+Qed.
+
+Local Lemma edge_phi (x y : BG) : x -- y -> exists2 e, E e.1 e.2 & [set x; y] = phi e.
+Proof.
+by case: x y => [l|r] [l'|r'] //= h; [exists (l, r') | exists (l', r); rewrite // /phi setUC].
+Qed.
+
+(** König's theorem: a matching and a vertex cover of at most the same size, made of vertices
+    incident to an edge.  A smallest vertex cover [V] of [BG] has the size of a matching [M'] of
+    [BG] ([min_vcover_matching]), hence is contained in the vertices of [M'] ([min_max_cover]). *)
+Theorem konig_bimatching :
+  exists M A B, [/\ bimatching M, bivcover A B, #|A| + #|B| <= #|M|,
+                    {in A, forall l, [exists r, E l r]} & {in B, forall r, [exists l, E l r]}].
+Proof.
+have covT : @connectivity.vcover BG setT by apply/vcoverP => x y _; left; rewrite inE.
+have [covV minV] := argmin_smallest covT.
+set V := [arg min_(_ < _ | _) _] in covV minV.
+have bip : bipartition [set x : BG | if x is inl _ then true else false].
+  by move=> [l|r] [l'|r']; rewrite !inE.
+have [M' matM' cardV] := min_vcover_matching bip (conj covV minV).
+have VM' := min_max_cover covV matM' (esym cardV).
+case: matM' => M'E M'inj.
+have M'phi e : e \in M' -> exists2 f, E f.1 f.2 & e = phi f.
+  by move=> /M'E /edgesP [x [y [-> xy]]]; apply: edge_phi.
+pose M := [set e | phi e \in M'].
+exists M, [set l | inl l \in V], [set r | inr r \in V]; split.
+- apply/bimatchingP; split.
+  + by move=> e; rewrite inE => /M'phi [f Ef /phi_inj ->].
+  + move=> e f; rewrite !inE => eM fM ef; apply: phi_inj.
+    by apply: (M'inj _ _ eM fM (inl e.1)); rewrite !inE ?ef eqxx.
+  + move=> e f; rewrite !inE => eM fM ef; apply: phi_inj.
+    by apply: (M'inj _ _ eM fM (inr e.2)); rewrite !inE ?ef eqxx ?orbT.
+- apply/forallP => l; apply/forallP => r; apply/implyP => lr; rewrite !inE.
+  by move/vcoverP: covV => /(_ (inl l) (inr r) lr) [->|->]; rewrite ?orbT.
+- rewrite -card_sum_set cardV -(card_imset _ phi_inj); apply/eq_leq/eq_card => e.
+  apply/idP/imsetP => [/[dup] /M'phi [f _ ->] fM|[f]]; last by rewrite inE => ? ->.
+  by exists f; rewrite ?inE.
+- move=> l; rewrite inE => /(subsetP VM') /bigcupP [e /M'phi [[l' r] /= lr ->]].
+  by rewrite !inE => /orP [/eqP [->]|//]; apply/existsP; exists r.
+- move=> r; rewrite inE => /(subsetP VM') /bigcupP [e /M'phi [[l r'] /= lr ->]].
+  by rewrite !inE => /orP [//|/eqP [->]]; apply/existsP; exists l.
+Qed.
+
+End Bipartite.
+
+Lemma bimatching_sub (X Y : finType) (E : X -> Y -> bool) (M M' : {set X * Y}) :
+  M' \subset M -> bimatching E M -> bimatching E M'.
+Proof.
+move=> /subsetP MM /bimatchingP[h1 h2 h3]; apply/bimatchingP.
+by split=> [e eM|e f eM fM|e f eM fM]; [apply: h1 | apply: h2 | apply: h3]; apply: MM.
+Qed.
+
+Lemma bimatching0 (X Y : finType) (E : X -> Y -> bool) : bimatching E set0.
+Proof. by apply/bimatchingP; split=> [e|e f|e f]; rewrite inE. Qed.

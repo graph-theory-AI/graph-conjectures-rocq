@@ -267,6 +267,7 @@
 | [AX_dense_bipartite_induced_or_large_clique](../theories/extremal/AX_dense_bipartite_induced_or_large_clique/main.v) |  |
 | [AX_dense_bipartite_induced_triangle_free_log](../theories/extremal/AX_dense_bipartite_induced_triangle_free_log/main.v) |  |
 | [AX_directed_sidorenko_bipartite_homomorphism](../theories/extremal/AX_directed_sidorenko_bipartite_homomorphism/main.v) |  |
+| [AX_directed_sidorenko_forcing_cycle_homomorphism](../theories/extremal/AX_directed_sidorenko_forcing_cycle_homomorphism/main.v) | new statement, encoding to be confirmed (rational densities, cut norm over sets of vertices) |
 | [AX_erdos_hajnal_c8_complement_c8](../theories/extremal/AX_erdos_hajnal_c8_complement_c8/main.v) | question: positive answer stated |
 | [AX_erdos_hajnal_polynomial_rodl_hereditary_families](../theories/extremal/AX_erdos_hajnal_polynomial_rodl_hereditary_families/main.v) |  |
 | [AX_graph_codes_even_edges_density_vanishes](../theories/extremal/AX_graph_codes_even_edges_density_vanishes/main.v) | question: positive answer stated |

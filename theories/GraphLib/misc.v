@@ -1605,3 +1605,13 @@ have disj : mcut A :&: mcut B = set0.
 have := subset_leq_card sub; rewrite cardsU disj cards0 subn0 cub => le3.
 by have := leq_trans (leq_add cA cB) le3.
 Qed.
+
+(** ** Sets of a sum type *)
+
+(** A set of a sum type has as many elements as its two parts. *)
+Lemma card_sum_set (T1 T2 : finType) (A : {set T1 + T2}) :
+  #|A| = #|[set x | inl x \in A]| + #|[set y | inr y \in A]|.
+Proof.
+rewrite -!sum1_card [LHS]big_mkcond big_sumType /= !(big_mkcond (fun i => i \in _)).
+by congr (_ + _); apply: eq_bigr => x _; rewrite inE.
+Qed.
