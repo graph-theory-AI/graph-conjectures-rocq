@@ -46,7 +46,7 @@ Progress is reported (mostly by AI agents) in:
 
 - [conjectures.md](progress/conjectures.md) (503 statements formalized, including 12 proxies)
 - [conjecture-proofs.md](progress/conjecture-proofs.md) (22 conjectures proved or disproved, including 1 proxy)
-- [relation-proofs.md](progress/relation-proofs.md) (94 relations proved)
+- [relation-proofs.md](progress/relation-proofs.md) (95 relations proved)
 - [graph-library.md](progress/graph-library.md) (735 definitions and 397 statements)
 - [problems-encountered.md](progress/problems-encountered.md) (proxies, repaired statements, disproved statements, choices and statuses to be checked; the column "user input" is for human decisions, signed with initials)
 
